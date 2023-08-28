@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "minecraft-server-central-app"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1gq12ghnzwtz4"
+s3_prefix = "minecraft-server-central-app"
+region = "eu-west-1"
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

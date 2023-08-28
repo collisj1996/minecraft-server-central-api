@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Minecraft Server Central stack
+  
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+
+  ServerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/server/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Layers:
+        - !Ref CoreLayer
+      Architectures:
+        - x86_64
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: GET
+
+  CoreLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: CoreLayer
+      Description: Core layer for Minecraft Server Central
+      ContentUri: core/
+      CompatibleRuntimes:
+        - python3.9
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: makefile
+
+
+Outputs:
+  ServerApi:
+    Description: "API Gateway endpoint URL for Prod stage for Server function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  ServerFunction:
+    Description: "Server Lambda Function ARN"
+    Value: !GetAtt ServerFunction.Arn
+  ServerFunctionIamRole:
+    Description: "Implicit IAM Role created for Server function"
+    Value: !GetAtt ServerFunctionRole.Arn
