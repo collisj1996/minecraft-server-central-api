@@ -13,11 +13,24 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   msc-app:
+    image: msc-web-app
     build:
       context: ./msc
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+
+  nginx-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.local.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - msc-app
+    tty: true
 
 volumes:
   postgres_data: null

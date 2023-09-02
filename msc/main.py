@@ -8,5 +8,9 @@ def read_root():
     return {"message": "Hello, World!"}
 
 @app.get("/ping")
-def read_root():
+def ping():
     return {"message": "pong"}
+
+@app.get("/health")
+def health():
+    return {"message": "healthy"}

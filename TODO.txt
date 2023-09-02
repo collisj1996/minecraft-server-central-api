@@ -1,2 +1,7 @@
 1. Check if adding proxy_pass http://msc-app:8000; to nginx.local.conf still works
 2. profit
+
+PUSH COMMANDS:
+
+aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 670349167663.dkr.ecr.eu-west-1.amazonaws.com
+docker build -t msc-app .
