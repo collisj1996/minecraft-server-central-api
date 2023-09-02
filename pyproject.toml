@@ -13,6 +13,8 @@ pydantic = "1.10.2"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
 
+[tool.poetry.scripts]
+start_docker = "docker_compose_up:main"
 
 [build-system]
 requires = ["poetry-core"]

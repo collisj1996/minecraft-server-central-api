@@ -1,0 +1,2 @@
+1. Check if adding proxy_pass http://msc-app:8000; to nginx.local.conf still works
+2. profit
