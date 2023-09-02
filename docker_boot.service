@@ -1,0 +1,12 @@
+[Unit]
+Description=docker boot
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ec2-user/minecraft-server-central
+ExecStart=/usr/bin/docker-compose -f /home/ec2-user/minecraft-server-central/docker-compose.yml up -d --remove-orphans
+
+[Install]
+WantedBy=multi-user.target

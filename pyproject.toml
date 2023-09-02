@@ -8,7 +8,6 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 sqlalchemy = "^2.0.20"
-aws-lambda-powertools = "^2.19.0"
 pydantic = "1.10.2"
 
 [tool.poetry.group.dev.dependencies]
