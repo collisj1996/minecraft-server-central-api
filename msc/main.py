@@ -14,3 +14,7 @@ def ping():
 @app.get("/health")
 def health():
     return {"message": "healthy"}
+
+@app.get("/version")
+def version():
+    return {"version": "0.0.1"}
