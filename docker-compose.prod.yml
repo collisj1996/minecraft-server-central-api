@@ -1,5 +1,21 @@
 version: '3'
 services:
+  db:
+    image: postgres:15.3-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: Plants-1337010203
+      POSTGRES_USER: msc
+      POSTGRES_DB: msc_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  msc-web-app:
+    image: 670349167663.dkr.ecr.eu-west-1.amazonaws.com/msc-web-app:latest
+    ports:
+      - "8000:8000"
+
   nginx-proxy:
     build:
       context: .
@@ -9,5 +25,8 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
-      - msc-app
+      - msc-web-app
     tty: true
+
+volumes:
+  postgres_data: null

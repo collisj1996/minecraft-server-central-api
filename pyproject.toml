@@ -15,6 +15,7 @@ pytest = "^7.4.0"
 
 [tool.poetry.scripts]
 start_docker = "scripts.docker_compose_up:main"
+build_api = "scripts.build_api:main"
 deploy_api = "scripts.deploy_api:main"
 
 [build-system]

@@ -20,7 +20,7 @@ def main():
 
 
     subprocess.run(
-        ["docker-compose", "build", "msc-app"],
+        ["docker-compose", "build", "msc-web-app"],
         check=True,
     )
     subprocess.run(
