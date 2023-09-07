@@ -9,6 +9,7 @@ readme = "README.md"
 fastapi = "^0.103.1"
 python = "^3.9"
 sqlalchemy = "^2.0.20"
+sqlalchemy-utils = "^0.41.1"
 pydantic = "1.10.2"
 alembic = "^1.11.1"
 uvicorn = "^0.23.1"
@@ -16,9 +17,11 @@ psycopg2 = "^2.9.7"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
+pytest-mock = "^3.11.1"
 black = "^23.7.0"
 isort = "^5.12.0"
 autopep8 = "^2.0.2"
+httpx = "^0.24.1"
 
 [tool.poetry.scripts]
 start_docker = "scripts.docker_compose_up:main"
