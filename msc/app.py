@@ -7,6 +7,7 @@ from .api import server_api
 
 logger = logging.getLogger(__name__)
 
+
 def create_app():
     """
     Creates the FastAPI application and returns it
@@ -21,6 +22,7 @@ def create_app():
     register_routers(app)
 
     return app
+
 
 def init_logging():
     level_name = config.logging_level

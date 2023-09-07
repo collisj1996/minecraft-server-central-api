@@ -1,10 +1,14 @@
 from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+from msc import db
 
-class Server(Base):
-    __tablename__ = 'server'
+
+class Server(db.Base):
+    """
+    Represents a server listing
+    """
+
+    __tablename__ = "server"
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -14,3 +18,21 @@ class Server(Base):
     website = Column(String)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
+
+    def __init__(
+        self,
+        name,
+        description,
+        ip_address,
+        port,
+        website,
+        created_at,
+        updated_at,
+    ):
+        self.name = name
+        self.description = description
+        self.ip_address = ip_address
+        self.port = port
+        self.website = website
+        self.created_at = created_at
+        self.updated_at = updated_at

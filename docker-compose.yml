@@ -2,6 +2,7 @@ version: '3'
 
 services:
   db:
+    restart: unless-stopped
     image: postgres:15.3-alpine
     ports:
       - "5432:5432"
@@ -13,14 +14,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   msc-web-app:
+    restart: unless-stopped
     image: msc-web-app
     build:
-      context: ./msc
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./docker/Dockerfile
     ports:
       - "8000:8000"
+    env_file:
+      - .env
 
   nginx-proxy:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile-nginx

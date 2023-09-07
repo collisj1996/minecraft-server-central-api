@@ -1,12 +1,11 @@
-
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import NullPool
 
 from msc.config import config
 
-def get_url():
 
+def get_url():
     db_user = config.db_user
     db_pass = config.db_pass
     db_host = config.db_host
@@ -14,6 +13,7 @@ def get_url():
     db_database = config.db_database
 
     return f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_database}"
+
 
 class Database:
     def __init__(self):

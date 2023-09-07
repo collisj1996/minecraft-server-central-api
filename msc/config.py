@@ -1,5 +1,6 @@
 from pydantic import BaseSettings, Field
 
+
 class Config(BaseSettings):
     # Database
     db_user: str = Field(None, env="DB_USER")
@@ -13,5 +14,6 @@ class Config(BaseSettings):
     logging_show_timestamps: bool = Field(False, env="LOGGING_SHOW_TIMESTAMPS")
     logging_enable_colour: bool = Field(False, env="LOGGING_ENABLE_COLOUR")
     logging_show_splash: bool = Field(False, env="LOGGING_SHOW_SPLASH")
+
 
 config = Config()
