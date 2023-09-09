@@ -9,7 +9,11 @@ from msc.utils.db_utils import validate_database
 logger = logging.getLogger("msc_db_log")
 
 
-def run_migrations(alembic_dir_path=None, upgrade=True, downgrade_target=None,):
+def run_migrations(
+    alembic_dir_path=None,
+    upgrade=True,
+    downgrade_target=None,
+):
     base_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", ".."),
     )
@@ -32,6 +36,7 @@ def run_migrations(alembic_dir_path=None, upgrade=True, downgrade_target=None,):
         command.downgrade(alembic_cgf, "-1")
         logger.info("Downgrade complete to previous revision")
         return "alembic downgrade complete to previous revision"
+
 
 if __name__ == "__main__":
     validate_database()

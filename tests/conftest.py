@@ -4,32 +4,37 @@ from fastapi.testclient import TestClient
 
 from sqlalchemy.orm import sessionmaker, close_all_sessions
 
+# This needs to be imported before anything in the msc package
+import tests.utils.database_config_override  # noqa
 from msc import db
 from msc.app import create_app
 from msc.database import Database
 from msc.migrations.db_migration import run_migrations
 from msc.utils.db_utils import validate_database
 
+
 class DisabledSession:
     def __getattribute__(self, name) -> Any:
-        raise Exception('SQLAlchemy session is disabled for testing')
+        raise Exception("SQLAlchemy session is disabled for testing")
+
 
 def pytest_configure(config):
-
     # Validate the database
     validate_database()
     # Run the migrations
     run_migrations()
-    
+
     # Disable the sqlalchemy session
     db.session = DisabledSession()
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def connection(request):
     """
     Use a single database connection for all tests.
     """
     return db.engine.connect()
+
 
 @pytest.fixture
 def session(connection, mocker):
@@ -46,15 +51,15 @@ def session(connection, mocker):
         bind=connection,
         autocommit=False,
         autoflush=False,
-        join_transaction_mode='create_savepoint',
+        join_transaction_mode="create_savepoint",
     )
     db.session = db.Session()
 
     # Mock the renew_session function so that it doesnt get called
-    mocker.patch.object(Database, 'renew_session')
+    mocker.patch.object(Database, "renew_session")
 
     # Mock the end_session function so that it doesnt get called
-    mocker.patch.object(Database, 'end_session')
+    mocker.patch.object(Database, "end_session")
 
     yield db.session
 
@@ -69,7 +74,8 @@ def session(connection, mocker):
     db.Session = orig_Session
 
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def application():
     """
     Create a Flask app context for the tests.

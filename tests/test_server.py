@@ -1,7 +1,7 @@
 from msc.models import Server
 
-def test_create_server(session):
 
+def test_create_server(session):
     assert session.query(Server).count() == 0
 
     server = Server(
@@ -9,9 +9,13 @@ def test_create_server(session):
         description="My Server Description",
         ip_address="192.168.1.100",
         port=8080,
+        country_code="GB",
+        minecraft_version="1.16.5",
+        votifier_ip_address=None,
+        votifier_port=None,
+        votifier_key=None,
         website="https://www.myserver.com",
-        created_at="2021-01-01 00:00:00",
-        updated_at="2021-01-01 00:00:00",
+        discord="https://discord.gg/myserver",
     )
 
     # You can then save the server to a database session

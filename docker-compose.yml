@@ -13,6 +13,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  test-db:
+    restart: unless-stopped
+    image: postgres:15.3-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_PASSWORD: Plants-1337010203
+      POSTGRES_USER: msc
+      POSTGRES_DB: msc_test_db
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+
   msc-web-app:
     restart: unless-stopped
     image: msc-web-app
@@ -22,7 +34,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - mscwebapp.env
 
   nginx-proxy:
     restart: unless-stopped
@@ -39,3 +51,4 @@ services:
 
 volumes:
   postgres_data: null
+  test_postgres_data: null
