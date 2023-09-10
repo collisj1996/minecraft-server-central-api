@@ -4,6 +4,7 @@ Contains code to create the FastAPI application and initialise the web server
 import logging
 
 from fastapi import FastAPI
+from starlette.requests import Request
 
 from msc.config import config
 from . import loggingutil
@@ -22,11 +23,28 @@ def create_app():
     app = FastAPI()
 
     logger.info("MSC Initialising")
+    init_middleware(app)
     register_routers(app)
     logger.info("MSC Initialised")
 
     return app
 
+def init_middleware(app):
+    logger.info("Intialising middleware")
+
+    @app.middleware("http")
+    async def global_request_middleware(request: Request, call_next):
+        
+        logger.info("Request: %s", request)
+        response = await call_next(request)
+        logger.info("Response: %s", response)
+
+        # handle CORS
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+
+        return response
 
 def init_logging():
     level_name = config.logging_level

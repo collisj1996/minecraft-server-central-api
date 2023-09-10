@@ -15,6 +15,8 @@ services:
     image: 670349167663.dkr.ecr.eu-west-1.amazonaws.com/msc-web-app:latest
     ports:
       - "8000:8000"
+    env_file:
+      - mscwebapp.env
 
   nginx-proxy:
     build:
