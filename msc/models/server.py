@@ -1,7 +1,7 @@
-from uuid import uuid4
 from datetime import datetime
+from uuid import uuid4
 
-from sqlalchemy import Column, Integer, Text, DateTime, Boolean
+from sqlalchemy import Boolean, Column, DateTime, Integer, Text
 from sqlalchemy.dialects.postgresql import UUID
 
 from msc import db
@@ -31,6 +31,8 @@ class Server(db.Base):
     discord = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
+
+    # TODO: Add server database constraints
 
     def __init__(
         self,

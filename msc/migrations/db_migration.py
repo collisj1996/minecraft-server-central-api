@@ -1,9 +1,8 @@
-import os
 import logging
+import os
 
 from alembic import command
 from alembic.config import Config
-
 from msc.utils.db_utils import validate_database
 
 logger = logging.getLogger("msc_db_log")

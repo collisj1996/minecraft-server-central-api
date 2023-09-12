@@ -9,13 +9,16 @@ logger = logging.getLogger("msc_db_log")
 
 router = APIRouter()
 
+
 @router.post("/migration/downgrade_latest")
 def downgrade_latest():
     return run_migrations(upgrade=False)
 
+
 @router.post("/migration/downgrade_to_version")
 def downgrade_to_version(body: dict = Body(...)):
     return run_migrations(upgrade=False, downgrade_target=body.version)
+
 
 @router.post("/migration/upgrade")
 def upgrade():

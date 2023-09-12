@@ -7,8 +7,9 @@ from fastapi import FastAPI
 from starlette.requests import Request
 
 from msc.config import config
+
 from . import loggingutil
-from .api import server_api, migration_api
+from .api import migration_api, server_api, util_api
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +30,12 @@ def create_app():
 
     return app
 
+
 def init_middleware(app):
     logger.info("Intialising middleware")
 
     @app.middleware("http")
     async def global_request_middleware(request: Request, call_next):
-        
         logger.info("Request: %s", request)
         response = await call_next(request)
         logger.info("Response: %s", response)
@@ -45,6 +46,7 @@ def init_middleware(app):
         response.headers["Access-Control-Allow-Headers"] = "*"
 
         return response
+
 
 def init_logging():
     level_name = config.logging_level
@@ -61,3 +63,4 @@ def register_routers(app):
     logger.info("registering routers")
     app.include_router(server_api.router, tags=["server"])
     app.include_router(migration_api.router, tags=["migration"])
+    app.include_router(util_api.router, tags=["util"])

@@ -1,8 +1,8 @@
 from typing import Any
+
 import pytest
 from fastapi.testclient import TestClient
-
-from sqlalchemy.orm import sessionmaker, close_all_sessions
+from sqlalchemy.orm import close_all_sessions, sessionmaker
 
 # This needs to be imported before anything in the msc package
 import tests.utils.database_config_override  # noqa
@@ -72,7 +72,6 @@ def session(connection, mocker):
 
     db.session = orig_session
     db.Session = orig_Session
-
 
 
 @pytest.fixture(scope="session")
