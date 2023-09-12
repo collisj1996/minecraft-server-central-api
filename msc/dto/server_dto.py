@@ -3,7 +3,7 @@ from uuid import UUID
 
 from msc.dto.base import BaseDto
 from msc.models import Server
-
+from msc.constants import CDN_DOMAIN
 
 class ServerDto(BaseDto):
     id: UUID
@@ -21,6 +21,7 @@ class ServerDto(BaseDto):
     votifier_key: Optional[str]
     website: Optional[str]
     discord: Optional[str]
+    banner_url: Optional[str]
 
     @classmethod
     def from_service(cls, server: Server):
@@ -40,11 +41,12 @@ class ServerDto(BaseDto):
             votifier_key=server.votifier_key,
             website=server.website,
             discord=server.discord,
+            banner_url=server.banner_url,
         )
 
 
 class ServersGetOutputDto(BaseDto):
-    servers: List[ServerDto]
+    __root__: List[ServerDto]
 
 
 class ServerCreateInputDto(BaseDto):
@@ -60,6 +62,7 @@ class ServerCreateInputDto(BaseDto):
     website: Optional[str]
     discord: Optional[str]
     banner_base64: Optional[str]
+
 
 class ServerUpdateInputDto(BaseDto):
     id: int

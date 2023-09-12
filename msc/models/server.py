@@ -31,6 +31,7 @@ class Server(db.Base):
     discord = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
+    banner_url = Column(Text, nullable=True)
 
     # TODO: Add server database constraints
 
@@ -47,6 +48,7 @@ class Server(db.Base):
         votifier_key,
         website,
         discord,
+        banner_url,
     ):
         self.name = name
         self.description = description
@@ -61,6 +63,7 @@ class Server(db.Base):
         self.discord = discord
         self.players = 0
         self.max_players = 0
+        self.banner_url = banner_url
 
         current_datetime = datetime.utcnow()
         self.created_at = current_datetime

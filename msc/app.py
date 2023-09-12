@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from starlette.requests import Request
 
 from msc.config import config
+from msc import db
 
 from . import loggingutil
 from .api import migration_api, server_api, util_api
@@ -39,6 +40,9 @@ def init_middleware(app):
         logger.info("Request: %s", request)
         response = await call_next(request)
         logger.info("Response: %s", response)
+
+        # End the session
+        db.end_session()
 
         # handle CORS
         response.headers["Access-Control-Allow-Origin"] = "*"

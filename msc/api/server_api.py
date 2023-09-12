@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from msc.dto.server_dto import ServerCreateInputDto, ServerDto
+from msc.dto.server_dto import ServerCreateInputDto, ServerDto, ServersGetOutputDto
 from msc.services import server_service
 
 router = APIRouter()
@@ -50,4 +50,6 @@ def get_servers():
 
     servers = server_service.get_servers()
 
-    return servers
+    dto = ServersGetOutputDto(__root__=[ServerDto.from_service(s) for s in servers])
+
+    return dto
