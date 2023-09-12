@@ -8,7 +8,7 @@ from starlette.requests import Request
 
 from msc.config import config
 from . import loggingutil
-from .api import server_api
+from .api import server_api, migration_api
 
 logger = logging.getLogger(__name__)
 
@@ -60,3 +60,4 @@ def init_logging():
 def register_routers(app):
     logger.info("registering routers")
     app.include_router(server_api.router, tags=["server"])
+    app.include_router(migration_api.router, tags=["migration"])
