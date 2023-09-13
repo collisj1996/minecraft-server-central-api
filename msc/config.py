@@ -15,5 +15,7 @@ class Config(BaseSettings):
     logging_enable_colour: bool = Field(False, env="LOGGING_ENABLE_COLOUR")
     logging_show_splash: bool = Field(False, env="LOGGING_SHOW_SPLASH")
 
+    development_mode: bool = Field(False, env="DEVELOPMENT_MODE")
+
 
 config = Config()

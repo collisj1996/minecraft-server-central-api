@@ -31,4 +31,4 @@ COPY ./alembic ./alembic
 COPY ./alembic.ini ./docker/docker-entrypoint.sh ./pytest.ini ./
 
 # Run app.py when the container launches
-CMD ["uvicorn", "msc.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "msc.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--forwarded-allow-ips='[::1]'"]

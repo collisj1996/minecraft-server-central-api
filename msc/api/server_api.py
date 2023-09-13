@@ -1,14 +1,10 @@
 from fastapi import APIRouter
 
-from msc.dto.server_dto import ServerCreateInputDto, ServerDto, ServersGetOutputDto
+from msc.dto.server_dto import (ServerCreateInputDto, ServerDto,
+                                ServersGetOutputDto, GetServersDto)
 from msc.services import server_service
 
 router = APIRouter()
-
-
-@router.get("/health")
-def health():
-    return {"message": "healthy"}
 
 
 @router.post("/servers")
@@ -48,8 +44,8 @@ def update_server(server):
 def get_servers():
     """Endpoint for getting all servers"""
 
-    servers = server_service.get_servers()
+    servers_resp = server_service.get_servers()
 
-    dto = ServersGetOutputDto(__root__=[ServerDto.from_service(s) for s in servers])
+    dto = ServersGetOutputDto(__root__=[GetServersDto.from_service(s) for s in servers_resp])
 
     return dto

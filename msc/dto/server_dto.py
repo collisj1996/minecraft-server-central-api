@@ -3,7 +3,6 @@ from uuid import UUID
 
 from msc.dto.base import BaseDto
 from msc.models import Server
-from msc.constants import CDN_DOMAIN
 
 class ServerDto(BaseDto):
     id: UUID
@@ -43,10 +42,37 @@ class ServerDto(BaseDto):
             discord=server.discord,
             banner_url=server.banner_url,
         )
+    
 
+class GetServersDto(ServerDto):
+    total_votes: int
+    votes_this_month: int
+
+    @classmethod
+    def from_service(cls, service_output):
+        return cls(
+            id=service_output[0].id,
+            name=service_output[0].name,
+            description=service_output[0].description,
+            ip_address=service_output[0].ip_address,
+            port=service_output[0].port,
+            players=service_output[0].players,
+            max_players=service_output[0].max_players,
+            is_online=service_output[0].is_online,
+            country_code=service_output[0].country_code,
+            minecraft_version=service_output[0].minecraft_version,
+            votifier_ip_address=service_output[0].votifier_ip_address,
+            votifier_port=service_output[0].votifier_port,
+            votifier_key=service_output[0].votifier_key,
+            website=service_output[0].website,
+            discord=service_output[0].discord,
+            banner_url=service_output[0].banner_url,
+            total_votes=service_output[1],
+            votes_this_month=service_output[2],
+        )
 
 class ServersGetOutputDto(BaseDto):
-    __root__: List[ServerDto]
+    __root__: List[GetServersDto]
 
 
 class ServerCreateInputDto(BaseDto):

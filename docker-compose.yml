@@ -34,7 +34,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - mscwebapp.env
+      - mscwebapplocal.env
     environment:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}

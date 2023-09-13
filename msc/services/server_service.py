@@ -1,15 +1,16 @@
 import base64
-import re
-from io import BytesIO
 from contextlib import contextmanager
+from datetime import datetime
+from io import BytesIO
 from typing import Optional
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import boto3
 from PIL import Image
+from sqlalchemy import and_, desc, func
 
 from msc import db
-from msc.models import Server
+from msc.models import Server, Vote
 
 
 @contextmanager
@@ -26,12 +27,35 @@ def _handle_db_errors():
 def get_servers():
     """Returns all servers"""
 
-    servers = db.session.query(Server).all()
+    # Get the current month and year
+    now = datetime.now()
+    month = now.month
+    year = now.year
 
-    # TODO: Add voting information
+    # Get servers and vote count
+    servers_result = (
+        db.session.query(
+            Server,
+            func.count(Vote.id).label("total_votes"),
+            func.count(Vote.id)
+            .filter(
+                and_(
+                    Vote.server_id == Server.id,
+                    func.extract("month", Vote.created_at) == month,
+                    func.extract("year", Vote.created_at) == year,
+                )
+            )
+            .label("votes_this_month"),
+        )
+        .outerjoin(Vote, Server.id == Vote.server_id)
+        .group_by(Server.id)
+        .order_by(desc("votes_this_month"))
+        .all()
+    )
+
     # TODO: Add pagination here
 
-    return servers
+    return servers_result
 
 
 def upload_banner(banner_base64: str) -> str:
@@ -46,7 +70,6 @@ def upload_banner(banner_base64: str) -> str:
 
     # Create a BytesIO object from the decoded image
     image_data = BytesIO(decoded_data)
-
 
     # Open the image using PIL
     with Image.open(image_data) as img:
@@ -71,7 +94,7 @@ def upload_banner(banner_base64: str) -> str:
         )
     except Exception as e:
         raise e
-    
+
     return f"https://cdn.minecraftservercentral.com/{key}"
 
 
@@ -83,6 +106,7 @@ def update_server():
 
 def create_server(
     name: str,
+    user_id: str,
     ip_address: str,
     country_code: str,
     minecraft_version: str,
@@ -97,10 +121,17 @@ def create_server(
 ):
     """Creates a server"""
 
+    # TODO: Add testing for this validation
+    user_servers = db.session.query(Server).filter(Server.user_id == user_id).all()
+
+    if len(user_servers) > 0:
+        raise Exception("User already has a server")
+
     banner_url = upload_banner(banner_base64) if banner_base64 else None
 
     server = Server(
         name=name,
+        user_id=user_id,
         description=description,
         ip_address=ip_address,
         port=port,

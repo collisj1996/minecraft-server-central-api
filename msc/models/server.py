@@ -1,7 +1,8 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, Text
+from sqlalchemy import (Boolean, Column, DateTime, ForeignKeyConstraint,
+                        Integer, Text, UniqueConstraint)
 from sqlalchemy.dialects.postgresql import UUID
 
 from msc import db
@@ -15,6 +16,7 @@ class Server(db.Base):
     __tablename__ = "server"
 
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid4)
+    user_id = Column(UUID(as_uuid=True), nullable=False)
     name = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     ip_address = Column(Text, nullable=False)
@@ -33,10 +35,21 @@ class Server(db.Base):
     updated_at = Column(DateTime, nullable=False)
     banner_url = Column(Text, nullable=True)
 
-    # TODO: Add server database constraints
+    __table_args__ = (
+        UniqueConstraint(
+            "id",
+            name="unique_server_id",
+        ),
+        ForeignKeyConstraint(
+            ["user_id"],
+            ["user.id"],
+            ondelete="CASCADE",
+        ),
+    )
 
     def __init__(
         self,
+        user_id,
         name,
         description,
         ip_address,
@@ -51,6 +64,7 @@ class Server(db.Base):
         banner_url,
     ):
         self.name = name
+        self.user_id = user_id
         self.description = description
         self.ip_address = ip_address
         self.port = port
