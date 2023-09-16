@@ -5,6 +5,8 @@ import logging
 
 from fastapi import FastAPI
 from starlette.requests import Request
+from starlette.responses import JSONResponse
+from starlette import status
 
 from msc import db
 from msc.config import config
@@ -37,7 +39,6 @@ def init_middleware(app):
 
     @app.middleware("http")
     async def global_request_middleware(request: Request, call_next):
-
         request.state.authorised = False
 
         if config.development_mode and "msc-user-id" in request.headers:

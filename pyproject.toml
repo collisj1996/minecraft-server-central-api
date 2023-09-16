@@ -25,6 +25,7 @@ black = "^23.7.0"
 isort = "^5.12.0"
 autopep8 = "^2.0.2"
 httpx = "^0.24.1"
+freezegun = "^1.2.2"
 
 [tool.poetry.scripts]
 start_docker = "scripts.docker_compose_up:main"

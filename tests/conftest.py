@@ -14,6 +14,8 @@ from msc.migrations.db_migration import run_migrations
 from msc.utils.db_utils import validate_database
 from tests.conftest_fixtures.server_fixtures import *
 from tests.conftest_fixtures.user_fixtures import *
+from tests.conftest_fixtures.vote_fixtures import *
+from tests.conftest_mocks.server_mocks import *
 
 
 class DisabledSession:

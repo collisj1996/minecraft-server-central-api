@@ -58,19 +58,7 @@ def get_servers():
     return servers_result
 
 
-def upload_banner(banner_base64: str) -> str:
-    """Uploads a banner to S3 and returns the URL, raises an exception if the upload fails"""
-    # TODO: Add tests for this function
-
-    # Remove metadata from base64 string
-    base64_data = banner_base64.split("base64,")[1]
-
-    # Decode the base64 image
-    decoded_data = base64.b64decode(base64_data.encode() + b"==")
-
-    # Create a BytesIO object from the decoded image
-    image_data = BytesIO(decoded_data)
-
+def _validate_banner(image_data: BytesIO) -> Image.Image:
     # Open the image using PIL
     with Image.open(image_data) as img:
         # Check if the image is 468 x 60 pixels
@@ -82,6 +70,23 @@ def upload_banner(banner_base64: str) -> str:
             raise ValueError(
                 "Invalid image format. Only GIF, PNG, and JPEG are supported."
             )
+        
+    return img
+
+def upload_banner(banner_base64: str) -> str:
+    """Uploads a banner to S3 and returns the URL, raises an exception if the upload fails"""
+
+    # Remove metadata from base64 string
+    base64_data = banner_base64.split("base64,")[1]
+
+    # Decode the base64 image
+    decoded_data = base64.b64decode(base64_data.encode() + b"==")
+
+    # Create a BytesIO object from the decoded image
+    image_data = BytesIO(decoded_data)
+
+    # Validate the image and return the PIL image
+    img = _validate_banner(image_data)
 
     s3 = boto3.client("s3")
     key = f"{uuid4()}.{img.format.lower()}"
@@ -90,7 +95,7 @@ def upload_banner(banner_base64: str) -> str:
         s3.put_object(
             Body=decoded_data,
             Bucket="cdn.minecraftservercentral.com",
-            Key=f"{uuid4()}.{img.format.lower()}",
+            Key=key,
         )
     except Exception as e:
         raise e

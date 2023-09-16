@@ -4,6 +4,7 @@ from uuid import UUID
 from msc.dto.base import BaseDto
 from msc.models import Server
 
+
 class ServerDto(BaseDto):
     id: UUID
     name: str
@@ -42,7 +43,7 @@ class ServerDto(BaseDto):
             discord=server.discord,
             banner_url=server.banner_url,
         )
-    
+
 
 class GetServersDto(ServerDto):
     total_votes: int
@@ -70,6 +71,7 @@ class GetServersDto(ServerDto):
             total_votes=service_output[1],
             votes_this_month=service_output[2],
         )
+
 
 class ServersGetOutputDto(BaseDto):
     __root__: List[GetServersDto]
