@@ -1,6 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 
+from msc.dto.custom_types import NOT_SET
 from msc.dto.base import BaseDto
 from msc.models import Server
 
@@ -45,7 +46,7 @@ class ServerDto(BaseDto):
         )
 
 
-class GetServersDto(ServerDto):
+class GetServerDto(ServerDto):
     total_votes: int
     votes_this_month: int
 
@@ -74,27 +75,38 @@ class GetServersDto(ServerDto):
 
 
 class ServersGetOutputDto(BaseDto):
-    __root__: List[GetServersDto]
+    __root__: List[GetServerDto]
 
 
 class ServerCreateInputDto(BaseDto):
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     ip_address: str
-    port: Optional[int]
+    port: Optional[int] = None
     country_code: str
     minecraft_version: str
-    votifier_ip_address: Optional[str]
-    votifier_port: Optional[int]
-    votifier_key: Optional[str]
-    website: Optional[str]
-    discord: Optional[str]
-    banner_base64: Optional[str]
+    votifier_ip_address: Optional[str] = None
+    votifier_port: Optional[int] = None
+    votifier_key: Optional[str] = None
+    website: Optional[str] = None
+    discord: Optional[str] = None
+    banner_base64: Optional[str] = None
 
 
 class ServerUpdateInputDto(BaseDto):
-    id: int
-    name: str
-    description: str
-    ip_address: str
-    port: int
+    name: Optional[str] = NOT_SET
+    description: Optional[str] = NOT_SET
+    ip_address: Optional[str] = NOT_SET
+    port: Optional[int] = NOT_SET
+    country_code: Optional[str] = NOT_SET
+    minecraft_version: Optional[str] = NOT_SET
+    votifier_ip_address: Optional[str] = NOT_SET
+    votifier_port: Optional[int] = NOT_SET
+    votifier_key: Optional[str] = NOT_SET
+    website: Optional[str] = NOT_SET
+    discord: Optional[str] = NOT_SET
+    banner_base64: Optional[str] = NOT_SET
+
+
+class ServerDeleteOutputDto(BaseDto):
+    deleted_server_id: UUID

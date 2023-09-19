@@ -1,8 +1,9 @@
 import logging
 
+from mcstatus import BedrockServer, JavaServer
+
 from msc import db
 from msc.models import Server
-from mcstatus import JavaServer, BedrockServer
 
 logger = logging.getLogger(__name__)
 
