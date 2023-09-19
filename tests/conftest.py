@@ -6,9 +6,9 @@ from sqlalchemy.orm import close_all_sessions, sessionmaker
 
 # This needs to be imported before anything in the msc package
 import tests.utils.database_config_override  # noqa
-from msc.config import config
 from msc import db
 from msc.app import create_app
+from msc.config import config
 from msc.database import Database
 from msc.migrations.db_migration import run_migrations
 from msc.utils.db_utils import validate_database

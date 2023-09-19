@@ -1,9 +1,11 @@
-import pytest
-import freezegun
 from datetime import datetime, timedelta
+
+import freezegun
+import pytest
 
 from msc.models import Server
 from msc.services import vote_service
+
 
 @pytest.fixture
 def votes_colcraft_20_this_month(server_colcraft: Server):

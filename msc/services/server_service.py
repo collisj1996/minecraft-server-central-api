@@ -70,8 +70,9 @@ def _validate_banner(image_data: BytesIO) -> Image.Image:
             raise ValueError(
                 "Invalid image format. Only GIF, PNG, and JPEG are supported."
             )
-        
+
     return img
+
 
 def upload_banner(banner_base64: str) -> str:
     """Uploads a banner to S3 and returns the URL, raises an exception if the upload fails"""

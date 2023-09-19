@@ -1,9 +1,10 @@
+from datetime import datetime, timedelta
+
+import freezegun
+import pytest
+
 from msc.models import Server, Vote
 from msc.services import vote_service
-from datetime import datetime, timedelta
-import freezegun
-
-import pytest
 
 
 def test_add_vote(session, server_colcraft: Server):
@@ -46,7 +47,10 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
                 client_ip=visitor_ip,
             )
 
-            assert str(e.value) == "You have already voted for this server in the last 24 hours"
+            assert (
+                str(e.value)
+                == "You have already voted for this server in the last 24 hours"
+            )
 
     # go forward 24 hours
     with freezegun.freeze_time(datetime.utcnow() + timedelta(hours=24)):

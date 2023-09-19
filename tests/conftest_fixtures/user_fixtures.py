@@ -18,7 +18,6 @@ def user_jack():
     return user
 
 
-
 @pytest.fixture
 def user_alan():
     """Returns a user with default values"""

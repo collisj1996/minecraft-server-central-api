@@ -1,9 +1,10 @@
-from msc.services import server_service, vote_service
-from io import BytesIO
 import base64
+from io import BytesIO
+
 import pytest
 
 from msc.models import Server, User
+from msc.services import server_service, vote_service
 
 
 def test_get_servers_no_servers(session):
@@ -14,7 +15,11 @@ def test_get_servers_no_servers(session):
     assert servers == []
 
 
-def test_get_servers(session, server_colcraft: Server, server_hypixel: Server,):
+def test_get_servers(
+    session,
+    server_colcraft: Server,
+    server_hypixel: Server,
+):
     """Tests getting servers"""
 
     servers = server_service.get_servers()
@@ -32,7 +37,11 @@ def test_get_servers(session, server_colcraft: Server, server_hypixel: Server,):
     assert colcraft_server[2] == 0
 
 
-def test_get_servers_with_votes(session, server_colcraft: Server, server_hypixel: Server,):
+def test_get_servers_with_votes(
+    session,
+    server_colcraft: Server,
+    server_hypixel: Server,
+):
     """Tests getting servers with votes"""
 
     # 2 votes for colcraft
@@ -58,7 +67,9 @@ def test_get_servers_with_votes(session, server_colcraft: Server, server_hypixel
 
 
 def test_get_servers_with_votes_order(
-    session, server_colcraft: Server, server_hypixel: Server,
+    session,
+    server_colcraft: Server,
+    server_hypixel: Server,
 ):
     """Tests getting servers with votes - order"""
 
@@ -86,7 +97,12 @@ def test_get_servers_with_votes_order(
     assert servers[0][0].id == server_hypixel.id
 
 
-def test_get_servers_with_votes_monthly(session, server_colcraft: Server, votes_colcraft_20_last_month, votes_colcraft_20_this_month,):
+def test_get_servers_with_votes_monthly(
+    session,
+    server_colcraft: Server,
+    votes_colcraft_20_last_month,
+    votes_colcraft_20_this_month,
+):
     """Tests getting servers with votes that are monthly"""
 
     servers = server_service.get_servers()
@@ -124,7 +140,10 @@ def test_validate_banner_valid_gif(session):
     assert img.format == "GIF"
 
 
-def test_create_server(session, user_jack: User,):
+def test_create_server(
+    session,
+    user_jack: User,
+):
     """Test that a server can be created"""
 
     assert session.query(Server).count() == 0
@@ -151,7 +170,11 @@ def test_create_server(session, user_jack: User,):
     assert session.query(Server).count() == 1
 
 
-def test_one_server_per_user(session, user_jack: User, server_colcraft: Server,):
+def test_one_server_per_user(
+    session,
+    user_jack: User,
+    server_colcraft: Server,
+):
     """Test that only one server can be created per user"""
 
     with pytest.raises(Exception) as e:

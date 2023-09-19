@@ -5,14 +5,13 @@ import logging
 
 from fastapi import FastAPI
 from starlette.requests import Request
-from starlette.responses import JSONResponse
-from starlette import status
 
 from msc import db
 from msc.config import config
 
 from . import loggingutil
 from .api import migration_api, server_api, util_api, vote_api
+from .jobs.jobs import scheduler
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +28,10 @@ def create_app():
     logger.info("MSC Initialising")
     init_middleware(app)
     register_routers(app)
+
+    # Initialise the scheduler
+    scheduler.start()
+
     logger.info("MSC Initialised")
 
     return app

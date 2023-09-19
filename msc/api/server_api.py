@@ -1,12 +1,8 @@
 from fastapi import APIRouter
 from fastapi.requests import Request
 
-from msc.dto.server_dto import (
-    ServerCreateInputDto,
-    ServerDto,
-    ServersGetOutputDto,
-    GetServersDto,
-)
+from msc.dto.server_dto import (GetServersDto, ServerCreateInputDto, ServerDto,
+                                ServersGetOutputDto)
 from msc.services import server_service
 
 router = APIRouter()
@@ -36,7 +32,6 @@ def create_server(request: Request, body: ServerCreateInputDto):
     )
 
     return ServerDto.from_service(server)
-
 
 
 @router.get("/servers/{server_id}")
