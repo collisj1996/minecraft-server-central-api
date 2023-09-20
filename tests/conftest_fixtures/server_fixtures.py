@@ -25,6 +25,7 @@ def server_colcraft(user_jack: User):
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
         banner_base64=image_base64_string,
+        gameplay=["Survival", "Creative", "Skyblock"],
     )
 
     return server
@@ -51,6 +52,7 @@ def server_hypixel(user_alan: User):
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
         banner_base64=image_base64_string,
+        gameplay=["Survival", "Creative", "Skyblock"],
     )
 
     return server

@@ -1,7 +1,8 @@
 from typing import List, Optional
 from uuid import UUID
-from pydantic import conint
+from pydantic import conint, validator, conlist
 
+from msc.constants import ALLOWED_GAMEPLAY
 from msc.dto.custom_types import NOT_SET
 from msc.dto.base import BaseDto
 from msc.models import Server
@@ -25,6 +26,7 @@ class ServerDto(BaseDto):
     discord: Optional[str]
     banner_url: Optional[str]
     favicon: Optional[str]
+    gameplay: List[str]
 
     @classmethod
     def from_service(cls, server: Server):
@@ -46,6 +48,7 @@ class ServerDto(BaseDto):
             discord=server.discord,
             banner_url=server.banner_url,
             favicon=server.favicon,
+            gameplay=[g.name for g in server.gameplay],
         )
 
 
@@ -79,6 +82,7 @@ class GetServerDto(ServerDto):
             discord=service_output[0].discord,
             banner_url=service_output[0].banner_url,
             favicon=service_output[0].favicon,
+            gameplay=[g.name for g in service_output[0].gameplay],
             total_votes=service_output[1],
             votes_this_month=service_output[2],
         )
@@ -102,6 +106,14 @@ class ServerCreateInputDto(BaseDto):
     website: Optional[str] = None
     discord: Optional[str] = None
     banner_base64: Optional[str] = None
+    gameplay: conlist(str, min_items=3, max_items=10)
+
+    @validator('gameplay')
+    def validate_gameplay(cls, gameplay):
+        for g in gameplay:
+            if g not in ALLOWED_GAMEPLAY:
+                raise ValueError(f"Invalid gameplay: {g}. Allowed gameplay: {ALLOWED_GAMEPLAY}")
+        return gameplay
 
 
 class ServerUpdateInputDto(BaseDto):
@@ -117,6 +129,14 @@ class ServerUpdateInputDto(BaseDto):
     website: Optional[str] = NOT_SET
     discord: Optional[str] = NOT_SET
     banner_base64: Optional[str] = NOT_SET
+    gameplay: Optional[conlist(str, min_items=3, max_items=10)] = NOT_SET
+
+    @validator('gameplay')
+    def validate_gameplay(cls, gameplay):
+        for g in gameplay:
+            if g not in ALLOWED_GAMEPLAY:
+                raise ValueError(f"Invalid gameplay: {g}. Allowed gameplay: {ALLOWED_GAMEPLAY}")
+        return gameplay
 
 
 class ServerDeleteOutputDto(BaseDto):

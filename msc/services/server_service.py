@@ -2,7 +2,7 @@ import base64
 from contextlib import contextmanager
 from datetime import datetime
 from io import BytesIO
-from typing import Optional
+from typing import Optional, List
 from uuid import uuid4, UUID
 
 import boto3
@@ -11,7 +11,7 @@ from sqlalchemy import and_, desc, func
 
 from msc import db
 from msc.dto.custom_types import NOT_SET
-from msc.models import Server, Vote
+from msc.models import Server, Vote, ServerGameplay
 
 
 @contextmanager
@@ -164,6 +164,7 @@ def update_server(
     votifier_key: Optional[str] = NOT_SET,
     website: Optional[str] = NOT_SET,
     discord: Optional[str] = NOT_SET,
+    gameplay: Optional[List[str]] = NOT_SET,
 ) -> Server:
     """Updates a server"""
 
@@ -220,6 +221,19 @@ def update_server(
     if discord != NOT_SET:
         server.discord = discord
 
+    if gameplay != NOT_SET:
+        # Delete all gameplay
+        db.session.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
+
+        # Add new gameplay
+        for gameplay_name in gameplay:
+            server_gameplay = ServerGameplay(
+                server_id=server_id,
+                name=gameplay_name,
+            )
+
+            db.session.add(server_gameplay)
+
     with _handle_db_errors():
         db.session.commit()
 
@@ -232,6 +246,7 @@ def create_server(
     ip_address: str,
     country_code: str,
     minecraft_version: str,
+    gameplay: List[str],
     banner_base64: Optional[str] = None,
     port: Optional[int] = None,
     description: Optional[str] = None,
@@ -270,6 +285,17 @@ def create_server(
     db.session.add(server)
 
     with _handle_db_errors():
+        db.session.flush()
+
+    for gameplay_name in gameplay:
+        server_gameplay = ServerGameplay(
+            server_id=server.id,
+            name=gameplay_name,
+        )
+
+        db.session.add(server_gameplay)
+
+    with _handle_db_errors():
         db.session.commit()
 
     return server
@@ -294,6 +320,12 @@ def delete_server(
 
     if server.user_id != user_id:
         raise Exception("You do not own this server")
+    
+    # delete all votes
+    db.session.query(Vote).filter(Vote.server_id == server_id).delete()
+
+    # delete all gameplay
+    db.session.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
 
     with _handle_db_errors():
         db.session.delete(server)

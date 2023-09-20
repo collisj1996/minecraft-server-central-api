@@ -26,6 +26,7 @@ def create_server(
     user_id = request.state.user_id
 
     # TODO: Add authentication here
+    # need to check if the user passed Auth
 
     server = server_service.create_server(
         name=body.name,
@@ -41,6 +42,7 @@ def create_server(
         website=body.website,
         discord=body.discord,
         banner_base64=body.banner_base64,
+        gameplay=body.gameplay,
     )
 
     return ServerDto.from_service(server)
@@ -102,6 +104,7 @@ def update_server(
         website=body.website,
         discord=body.discord,
         banner_base64=body.banner_base64,
+        gameplay=body.gameplay,
     )
 
     return ServerDto.from_service(server)

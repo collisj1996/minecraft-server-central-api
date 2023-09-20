@@ -10,6 +10,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 
 from msc import db
@@ -42,6 +43,8 @@ class Server(db.Base):
     updated_at = Column(DateTime, nullable=False)
     banner_url = Column(Text, nullable=True)
     favicon = Column(Text, nullable=True)
+
+    gameplay = relationship("ServerGameplay", backref="server")
 
     __table_args__ = (
         UniqueConstraint(

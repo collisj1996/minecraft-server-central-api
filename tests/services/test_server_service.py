@@ -167,6 +167,7 @@ def test_create_server(
         votifier_key=None,
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
+        gameplay=["Survival", "Creative", "Skyblock"],
     )
 
     assert server
@@ -197,6 +198,7 @@ def test_one_server_per_user(
             votifier_key=None,
             website="https://www.myserver.com",
             discord="https://discord.gg/myserver",
+            gameplay=["Survival", "Creative", "Skyblock"],
         )
 
     assert str(e.value) == "User already has a server"
@@ -227,6 +229,7 @@ def _create_multiple_servers_for_pagination(session):
             votifier_key=None,
             website="https://www.myserver.com",
             discord="https://discord.gg/myserver",
+            gameplay=["Survival", "Creative", "Skyblock"],
         )
 
         # force add i votes for the server
@@ -283,6 +286,7 @@ def test_update_server_all_properties(
         website="https://www.updated.com",
         discord="https://discord.gg/updated",
         banner_base64=None,
+        gameplay=["Survival", "Creative", "Skyblock", "Bedwars", "Minigames"],
     )
 
     assert updated_server
@@ -298,6 +302,14 @@ def test_update_server_all_properties(
     assert updated_server.website == "https://www.updated.com"
     assert updated_server.discord == "https://discord.gg/updated"
     assert updated_server.banner_url is None
+    for updated_gameplay in [g.name for g in updated_server.gameplay]:
+        assert updated_gameplay in [
+            "Survival",
+            "Creative",
+            "Skyblock",
+            "Bedwars",
+            "Minigames",
+        ]
 
 
 def test_update_server_some_properties(
@@ -320,6 +332,7 @@ def test_update_server_some_properties(
         votifier_key=None,
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
+        gameplay=["Survival", "Creative", "Skyblock"],
     )
 
     # now update some properties
