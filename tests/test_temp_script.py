@@ -2,9 +2,9 @@ import requests
 from uuid import uuid4
 import pytest
 
+
 @pytest.mark.skip(reason="This test is for a temporary script")
 def test_temp_script(session):
-
     users_endpoint = "https://api.minecraftservercentral.com/users"
     servers_endpoint = "https://api.minecraftservercentral.com/servers"
 
@@ -35,6 +35,8 @@ def test_temp_script(session):
         assert user_response.status_code == 200
 
         # create the server
-        server_response = requests.post(servers_endpoint, json=server_payload, headers={"msc-user-id": user_id})
+        server_response = requests.post(
+            servers_endpoint, json=server_payload, headers={"msc-user-id": user_id}
+        )
 
         assert server_response.status_code == 200

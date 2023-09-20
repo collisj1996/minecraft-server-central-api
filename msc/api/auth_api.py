@@ -15,7 +15,10 @@ def get_token(
 ):
     """Endpoint for getting a token"""
 
-    response = auth_service.get_token(code=query_params.code, redirect_url=query_params.redirect_url,)
+    response = auth_service.get_token(
+        code=query_params.code,
+        redirect_url=query_params.redirect_url,
+    )
 
     return GetTokenOutputDto.parse_obj(response)
 
@@ -27,6 +30,8 @@ def refresh_token(
 ):
     """Endpoint for refreshing a token"""
 
-    token = auth_service.refresh_token(refresh_token=query_params.refresh_token,)
+    token = auth_service.refresh_token(
+        refresh_token=query_params.refresh_token,
+    )
 
     return token

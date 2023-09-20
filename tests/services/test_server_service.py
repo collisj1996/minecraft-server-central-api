@@ -407,3 +407,18 @@ def test_delete_server_not_owned(
         )
 
     assert str(e.value) == "You do not own this server"
+
+
+def test_get_server(session, server_colcraft: Server):
+    """Tests getting a server"""
+
+    server, total_votes, monthly_votes, rank = server_service.get_server(
+        server_id=server_colcraft.id
+    )
+
+    assert server
+    assert server.id == server_colcraft.id
+    assert server.name == server_colcraft.name
+    assert total_votes == 0
+    assert monthly_votes == 0
+    assert rank == 1

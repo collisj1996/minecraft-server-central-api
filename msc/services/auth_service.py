@@ -3,18 +3,21 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def get_token(code: str, redirect_url: str):
     try:
         params = {
-            'grant_type': 'authorization_code',
-            'client_id': 'it0ectnsd44cr1phrifio2h5k',
-            'redirect_uri': redirect_url,
-            'code': code
+            "grant_type": "authorization_code",
+            "client_id": "it0ectnsd44cr1phrifio2h5k",
+            "redirect_uri": redirect_url,
+            "code": code,
         }
 
-        result = requests.post('https://minecraftservercentral.auth.eu-west-1.amazoncognito.com/oauth2/token', params=params, headers={
-            'content-type': 'application/x-www-form-urlencoded;charset=utf-8'
-        })
+        result = requests.post(
+            "https://minecraftservercentral.auth.eu-west-1.amazoncognito.com/oauth2/token",
+            params=params,
+            headers={"content-type": "application/x-www-form-urlencoded;charset=utf-8"},
+        )
 
         return result.json()
     except Exception as e:

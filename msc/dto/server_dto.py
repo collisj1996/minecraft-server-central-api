@@ -59,6 +59,7 @@ class ServersGetInputDto(BaseDto):
 
 
 class GetServerDto(ServerDto):
+    rank: int
     total_votes: int
     votes_this_month: int
 
@@ -83,6 +84,7 @@ class GetServerDto(ServerDto):
             banner_url=service_output[0].banner_url,
             favicon=service_output[0].favicon,
             gameplay=[g.name for g in service_output[0].gameplay],
+            rank=service_output[3],
             total_votes=service_output[1],
             votes_this_month=service_output[2],
         )
@@ -108,11 +110,13 @@ class ServerCreateInputDto(BaseDto):
     banner_base64: Optional[str] = None
     gameplay: conlist(str, min_items=3, max_items=10)
 
-    @validator('gameplay')
+    @validator("gameplay")
     def validate_gameplay(cls, gameplay):
         for g in gameplay:
             if g not in ALLOWED_GAMEPLAY:
-                raise ValueError(f"Invalid gameplay: {g}. Allowed gameplay: {ALLOWED_GAMEPLAY}")
+                raise ValueError(
+                    f"Invalid gameplay: {g}. Allowed gameplay: {ALLOWED_GAMEPLAY}"
+                )
         return gameplay
 
 
@@ -131,11 +135,13 @@ class ServerUpdateInputDto(BaseDto):
     banner_base64: Optional[str] = NOT_SET
     gameplay: Optional[conlist(str, min_items=3, max_items=10)] = NOT_SET
 
-    @validator('gameplay')
+    @validator("gameplay")
     def validate_gameplay(cls, gameplay):
         for g in gameplay:
             if g not in ALLOWED_GAMEPLAY:
-                raise ValueError(f"Invalid gameplay: {g}. Allowed gameplay: {ALLOWED_GAMEPLAY}")
+                raise ValueError(
+                    f"Invalid gameplay: {g}. Allowed gameplay: {ALLOWED_GAMEPLAY}"
+                )
         return gameplay
 
 

@@ -7,7 +7,7 @@ from uuid import uuid4, UUID
 
 import boto3
 from PIL import Image
-from sqlalchemy import and_, desc, func
+from sqlalchemy import and_, desc, func, text
 
 from msc import db
 from msc.dto.custom_types import NOT_SET
@@ -39,24 +39,41 @@ def get_servers(
     month = now.month
     year = now.year
 
+    subquery = (
+        db.session.query(
+            Vote.server_id,
+            func.count(Vote.id).label("votes_this_month_sub"),
+        )
+        .filter(
+            and_(
+                func.extract("month", Vote.created_at) == month,
+                func.extract("year", Vote.created_at) == year,
+            )
+        )
+        .group_by(Vote.server_id)
+        .subquery()
+    )
+
     # Get servers and vote count
     servers_query = (
         db.session.query(
             Server,
             func.count(Vote.id).label("total_votes"),
-            func.count(Vote.id)
-            .filter(
-                and_(
-                    Vote.server_id == Server.id,
-                    func.extract("month", Vote.created_at) == month,
-                    func.extract("year", Vote.created_at) == year,
-                )
+            func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
+            func.rank()
+            .over(
+                order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
+                partition_by=None,
             )
-            .label("votes_this_month"),
+            .label("rank"),
         )
         .outerjoin(Vote, Server.id == Vote.server_id)
-        .group_by(Server.id)
-        .order_by(desc("votes_this_month"))
+        .outerjoin(subquery, Server.id == subquery.c.server_id)
+        .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
+        .order_by(
+            desc("votes_this_month"),
+            Server.created_at.desc(),
+        )
     )
 
     # Add pagination
@@ -76,24 +93,38 @@ def get_server(server_id: UUID) -> Server:
     month = now.month
     year = now.year
 
+    subquery = (
+        db.session.query(
+            Vote.server_id,
+            func.count(Vote.id).label("votes_this_month_sub"),
+        )
+        .filter(
+            and_(
+                func.extract("month", Vote.created_at) == month,
+                func.extract("year", Vote.created_at) == year,
+            )
+        )
+        .group_by(Vote.server_id)
+        .subquery()
+    )
+
     # get server with votes
     server_and_votes = (
         db.session.query(
             Server,
             func.count(Vote.id).label("total_votes"),
-            func.count(Vote.id)
-            .filter(
-                and_(
-                    Vote.server_id == Server.id,
-                    func.extract("month", Vote.created_at) == month,
-                    func.extract("year", Vote.created_at) == year,
-                )
+            func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
+            func.rank()
+            .over(
+                order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
+                partition_by=None,
             )
-            .label("votes_this_month"),
+            .label("rank"),
         )
         .outerjoin(Vote, Server.id == Vote.server_id)
+        .outerjoin(subquery, Server.id == subquery.c.server_id)
         .filter(Server.id == server_id)
-        .group_by(Server.id)
+        .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
         .one_or_none()
     )
 
@@ -223,7 +254,9 @@ def update_server(
 
     if gameplay != NOT_SET:
         # Delete all gameplay
-        db.session.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
+        db.session.query(ServerGameplay).filter(
+            ServerGameplay.server_id == server_id
+        ).delete()
 
         # Add new gameplay
         for gameplay_name in gameplay:
@@ -320,12 +353,14 @@ def delete_server(
 
     if server.user_id != user_id:
         raise Exception("You do not own this server")
-    
+
     # delete all votes
     db.session.query(Vote).filter(Vote.server_id == server_id).delete()
 
     # delete all gameplay
-    db.session.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
+    db.session.query(ServerGameplay).filter(
+        ServerGameplay.server_id == server_id
+    ).delete()
 
     with _handle_db_errors():
         db.session.delete(server)
