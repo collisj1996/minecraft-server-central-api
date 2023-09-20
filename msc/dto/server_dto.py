@@ -45,6 +45,7 @@ class ServerDto(BaseDto):
             website=server.website,
             discord=server.discord,
             banner_url=server.banner_url,
+            favicon=server.favicon,
         )
 
 
@@ -77,6 +78,7 @@ class GetServerDto(ServerDto):
             website=service_output[0].website,
             discord=service_output[0].discord,
             banner_url=service_output[0].banner_url,
+            favicon=service_output[0].favicon,
             total_votes=service_output[1],
             votes_this_month=service_output[2],
         )
