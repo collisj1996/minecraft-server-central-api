@@ -10,7 +10,7 @@ from msc import db
 from msc.config import config
 
 from . import loggingutil
-from .api import migration_api, server_api, util_api, vote_api, user_api
+from .api import migration_api, server_api, util_api, vote_api, user_api, auth_api
 from .jobs.jobs import scheduler
 
 logger = logging.getLogger(__name__)
@@ -88,3 +88,4 @@ def register_routers(app):
     app.include_router(util_api.router, tags=["util"])
     app.include_router(vote_api.router, tags=["vote"])
     app.include_router(user_api.router, tags=["user"])
+    app.include_router(auth_api.router, tags=["auth"])

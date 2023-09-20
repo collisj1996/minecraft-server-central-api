@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.requests import Request
 from uuid import UUID
 
@@ -57,13 +57,13 @@ def get_server(server_id: str) -> GetServerDto:
 
 @router.get("/servers")
 def get_servers(
-    query_params: ServersGetInputDto,
+    query_params: ServersGetInputDto = Depends(),
 ) -> ServersGetOutputDto:
     """Endpoint for getting all servers"""
 
     servers_resp, total_servers = server_service.get_servers(
         page=query_params.page,
-        per_page=query_params.page_size,
+        page_size=query_params.page_size,
         filter=query_params.filter,
     )
 
