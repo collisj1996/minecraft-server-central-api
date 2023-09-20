@@ -24,6 +24,7 @@ class ServerDto(BaseDto):
     website: Optional[str]
     discord: Optional[str]
     banner_url: Optional[str]
+    favicon: Optional[str]
 
     @classmethod
     def from_service(cls, server: Server):

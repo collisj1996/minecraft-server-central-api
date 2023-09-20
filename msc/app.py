@@ -2,8 +2,10 @@
 Contains code to create the FastAPI application and initialise the web server
 """
 import logging
+import cognitojwt
 
-from fastapi import FastAPI
+from fastapi import FastAPI, status
+from fastapi.responses import JSONResponse
 from starlette.requests import Request
 
 from msc import db
@@ -47,13 +49,26 @@ def init_middleware(app):
         if config.development_mode and "msc-user-id" in request.headers:
             request.state.user_id = request.headers["msc-user-id"]
         elif "Authorization" in request.headers:
-            auth_header = request.headers["Authorization"]
-            # if auth_header.startswith("Bearer "):
-            #     token = auth_header.split(" ")[1]
-            #     request.state.user_id = token
+            token = request.headers["Authorization"]
 
-            # Validate the token
-            # Decode the token
+            REGION = "eu-west-1"
+            USERPOOL_ID = "eu-west-1_4tUpfVYqE"
+            APP_CLIENT_ID = "it0ectnsd44cr1phrifio2h5k"
+
+            try:
+                verified_claims: dict = cognitojwt.decode(
+                    token=token,
+                    region=REGION,
+                    userpool_id=USERPOOL_ID,
+                    app_client_id=APP_CLIENT_ID,  # Optional
+                )
+
+                request.state.user_id = verified_claims["sub"]
+            except Exception as e:
+                return JSONResponse(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    content={"message": "Not authorised"},
+                )
 
         logger.info("Request: %s", request)
         response = await call_next(request)
