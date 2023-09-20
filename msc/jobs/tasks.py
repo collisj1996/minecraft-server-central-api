@@ -40,3 +40,5 @@ def poll_servers():
         except Exception as e:
             logger.error("Error getting server query: %s", e)
             continue
+
+    db.end_session()

@@ -9,13 +9,18 @@ from msc.dto.server_dto import (
     ServersGetOutputDto,
     ServerUpdateInputDto,
     ServerDeleteOutputDto,
+    ServersGetInputDto,
 )
 from msc.services import server_service
 
 router = APIRouter()
 
+
 @router.post("/servers")
-def create_server(request: Request, body: ServerCreateInputDto) -> ServerDto:
+def create_server(
+    request: Request,
+    body: ServerCreateInputDto,
+) -> ServerDto:
     """Endpoint for creating a server"""
 
     user_id = request.state.user_id
@@ -51,13 +56,20 @@ def get_server(server_id: str) -> GetServerDto:
 
 
 @router.get("/servers")
-def get_servers() -> ServersGetOutputDto:
+def get_servers(
+    query_params: ServersGetInputDto,
+) -> ServersGetOutputDto:
     """Endpoint for getting all servers"""
 
-    servers_resp = server_service.get_servers()
+    servers_resp, total_servers = server_service.get_servers(
+        page=query_params.page,
+        per_page=query_params.page_size,
+        filter=query_params.filter,
+    )
 
     dto = ServersGetOutputDto(
-        __root__=[GetServerDto.from_service(s) for s in servers_resp]
+        total_servers=total_servers,
+        servers=[GetServerDto.from_service(s) for s in servers_resp],
     )
 
     return dto

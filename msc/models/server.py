@@ -41,6 +41,7 @@ class Server(db.Base):
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
     banner_url = Column(Text, nullable=True)
+    favicon = Column(Text, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(

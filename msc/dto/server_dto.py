@@ -1,5 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
+from pydantic import conint
 
 from msc.dto.custom_types import NOT_SET
 from msc.dto.base import BaseDto
@@ -46,6 +47,12 @@ class ServerDto(BaseDto):
         )
 
 
+class ServersGetInputDto(BaseDto):
+    page: Optional[conint(ge=1)] = 1
+    page_size: Optional[conint(ge=10, le=30)] = 10
+    filter: Optional[str] = None
+
+
 class GetServerDto(ServerDto):
     total_votes: int
     votes_this_month: int
@@ -75,7 +82,8 @@ class GetServerDto(ServerDto):
 
 
 class ServersGetOutputDto(BaseDto):
-    __root__: List[GetServerDto]
+    total_servers: int
+    servers: List[GetServerDto]
 
 
 class ServerCreateInputDto(BaseDto):

@@ -25,8 +25,14 @@ def _handle_db_errors():
         raise e
 
 
-def get_servers():
+def get_servers(
+    page: int = 1,
+    page_size: int = 10,
+    filter: Optional[str] = None,
+):
     """Returns all servers"""
+
+    # TODO: Add filtering
 
     # Get the current month and year
     now = datetime.now()
@@ -34,7 +40,7 @@ def get_servers():
     year = now.year
 
     # Get servers and vote count
-    servers_result = (
+    servers_query = (
         db.session.query(
             Server,
             func.count(Vote.id).label("total_votes"),
@@ -51,12 +57,17 @@ def get_servers():
         .outerjoin(Vote, Server.id == Vote.server_id)
         .group_by(Server.id)
         .order_by(desc("votes_this_month"))
-        .all()
     )
 
-    # TODO: Add pagination here
+    # Add pagination
+    servers_query = servers_query.limit(page_size).offset((page - 1) * page_size)
 
-    return servers_result
+    servers_result = servers_query.all()
+
+    # get total number of servers
+    total_servers = db.session.query(func.count(Server.id)).scalar()
+
+    return servers_result, total_servers
 
 
 def get_server(server_id: UUID) -> Server:
@@ -183,7 +194,10 @@ def update_server(
         server.minecraft_version = minecraft_version
 
     if banner_base64 != NOT_SET:
-        server.banner_url = upload_banner(banner_base64)
+        if banner_base64 is None:
+            server.banner_url = None
+        else:
+            server.banner_url = upload_banner(banner_base64)
 
     if port != NOT_SET:
         server.port = port
