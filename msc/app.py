@@ -5,10 +5,11 @@ import logging
 import cognitojwt
 
 from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.requests import Request
 
-from msc import db
+from msc import db, errorhandling
 from msc.config import config
 
 from . import loggingutil
@@ -29,6 +30,7 @@ def create_app():
 
     logger.info("MSC Initialising")
     init_middleware(app)
+    init_error_handlers(app)
     register_routers(app)
 
     # Initialise the scheduler
@@ -77,12 +79,23 @@ def init_middleware(app):
         # End the session
         db.end_session()
 
-        # handle CORS
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-
         return response
+    
+    origins = [
+        "http://localhost",
+        "http://localhost:3000",
+        "https://minecraftservercentral.com",
+        "https://www.minecraftservercentral.com",
+    ]
+    
+    # CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 def init_logging():
@@ -94,6 +107,11 @@ def init_logging():
         show_timestamps=config.logging_show_timestamps,
         colour=config.logging_enable_colour,
     )
+
+
+def init_error_handlers(app):
+    logger.info("Initialising error handlers")
+    errorhandling.init_error_handlers(app)
 
 
 def register_routers(app):
