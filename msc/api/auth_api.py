@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends
 from fastapi.requests import Request
 
-from msc.dto.auth_dto import RefreshTokenInputDto, GetTokenInputDto, GetTokenOutputDto
+from msc.dto.auth_dto import (
+    RefreshTokenInputDto,
+    GetTokenInputDto,
+    GetTokenOutputDto,
+    RefreshTokenOutputDto,
+)
 
 from msc.services import auth_service
 
@@ -23,7 +28,7 @@ def get_token(
     return GetTokenOutputDto.parse_obj(response)
 
 
-@router.post("/auth/refresh_token")
+@router.get("/auth/refresh_token")
 def refresh_token(
     request: Request,
     query_params: RefreshTokenInputDto = Depends(),
@@ -34,4 +39,4 @@ def refresh_token(
         refresh_token=query_params.refresh_token,
     )
 
-    return token
+    return RefreshTokenOutputDto.parse_obj(token)

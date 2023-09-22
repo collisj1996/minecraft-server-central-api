@@ -26,4 +26,20 @@ def get_token(code: str, redirect_url: str):
 
 
 def refresh_token(refresh_token: str):
-    pass
+    try:
+        params = {
+            "grant_type": "refresh_token",
+            "client_id": "it0ectnsd44cr1phrifio2h5k",
+            "refresh_token": refresh_token,
+        }
+
+        result = requests.post(
+            "https://minecraftservercentral.auth.eu-west-1.amazoncognito.com/oauth2/token",
+            params=params,
+            headers={"content-type": "application/x-www-form-urlencoded;charset=utf-8"},
+        )
+
+        return result.json()
+    except Exception as e:
+        logging.error(e)
+        raise e

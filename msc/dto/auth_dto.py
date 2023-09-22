@@ -17,3 +17,10 @@ class GetTokenOutputDto(BaseDto):
 
 class RefreshTokenInputDto(BaseDto):
     refresh_token: str
+
+
+class RefreshTokenOutputDto(BaseDto):
+    id_token: str
+    access_token: str
+    token_type: str
+    expires_in: int
