@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Optional
 
 from msc.dto.base import BaseDto
 from msc.dto.custom_types import DateTimeUTC
@@ -16,9 +17,6 @@ class CheckVoteInputDto(BaseDto):
 
 class CheckVoteOutputDto(BaseDto):
     has_voted: bool
-    last_vote: DateTimeUTC
-    time_left_ms: int
-
-
-class CheckVoteOutputDebugDto(CheckVoteOutputDto):
-    client_ip: str
+    last_vote: Optional[DateTimeUTC] = None
+    time_left_ms: Optional[int] = None
+    client_ip: str  # TODO: Remove this

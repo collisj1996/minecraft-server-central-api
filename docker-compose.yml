@@ -39,6 +39,7 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_DEFAULT_REGION}
+    command: uvicorn --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*' --reload msc.asgi:application
 
   nginx-proxy:
     restart: unless-stopped

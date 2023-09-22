@@ -81,10 +81,7 @@ def init_error_handlers(app):
                 status_code=400,
             )
 
-        trace = "".join(traceback.format_exception(exception))
-        logger.error(
-            f"Unhandled ResponseValidationError occurred: {exception}\n{trace}"
-        )
+        logger.error(f"Unhandled ResponseValidationError occurred: {exception}")
 
         error_data = _get_exception_error_data(exception)
 
@@ -113,17 +110,6 @@ def init_error_handlers(app):
                 data={"errors": exception.errors()},
             ).dict(),
             status_code=500,
-        )
-
-    @app.exception_handler(ValueError)
-    def handle_value_error(request: Request, exception: ValueError):
-        trace = "".join(traceback.format_exception(exception))
-        logger.error(f"Unhandled ValueError occurred: {exception}\n{trace}")
-        error_data = _get_exception_error_data(exception)
-
-        return JSONResponse(
-            status_code=500,
-            content={"message": "An unexpected error occurred", "error": error_data},
         )
 
     @app.exception_handler(Exception)
