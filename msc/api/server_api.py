@@ -10,6 +10,7 @@ from msc.dto.server_dto import (
     ServerUpdateInputDto,
     ServerDeleteOutputDto,
     ServersGetInputDto,
+    ServersMineOutputDto,
 )
 from msc.services import server_service
 
@@ -72,6 +73,23 @@ def get_servers(
     dto = ServersGetOutputDto(
         total_servers=total_servers,
         servers=[GetServerDto.from_service(s) for s in servers_resp],
+    )
+
+    return dto
+
+
+@router.get("/servers/mine")
+def get_my_servers(
+    request: Request,
+) -> ServersGetOutputDto:
+    """Endpoint for getting all servers"""
+
+    user_id = request.state.user_id
+
+    my_servers = server_service.get_my_servers(user_id)
+
+    dto = ServersMineOutputDto(
+        __root__=[GetServerDto.from_service(s) for s in my_servers],
     )
 
     return dto

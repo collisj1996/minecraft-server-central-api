@@ -422,3 +422,43 @@ def test_get_server(session, server_colcraft: Server):
     assert total_votes == 0
     assert monthly_votes == 0
     assert rank == 1
+
+
+def test_get_my_servers(
+    session,
+    user_jack: User,
+    user_alan: User,
+    server_colcraft: Server,
+    server_hypixel: Server,
+):
+    """Tests getting my servers"""
+
+    # create another server for jack
+    server_2 = server_service.create_server(
+        name="My Server 2",
+        user_id=user_jack.id,
+        description="My Server Description",
+        ip_address="1.2.3.4",
+        gameplay=["Survival", "Creative", "Skyblock"],
+        country_code="GB",
+        minecraft_version="1.16.5",
+    )
+
+    # get all servers
+    servers = server_service.get_servers()[0]
+
+    assert len(servers) == 3
+
+    # get my servers
+    my_servers = server_service.get_my_servers(user_jack.id)
+
+    assert len(my_servers) == 2
+
+    for s in my_servers:
+        assert s[0].id in [server_colcraft.id, server_2.id]
+
+    # get my servers for alan
+    my_servers = server_service.get_my_servers(user_alan.id)
+
+    for s in my_servers:
+        assert s[0].id in [server_hypixel.id]

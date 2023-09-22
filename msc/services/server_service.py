@@ -12,6 +12,7 @@ from sqlalchemy import and_, desc, func, text
 from msc import db
 from msc.dto.custom_types import NOT_SET
 from msc.models import Server, Vote, ServerGameplay
+from msc.errors import BadRequest
 
 
 @contextmanager
@@ -132,6 +133,57 @@ def get_server(server_id: UUID) -> Server:
         raise Exception("Server not found")
 
     return server_and_votes
+
+
+def get_my_servers(user_id: UUID):
+    """Returns all servers owned by a user with vote count and no pagination"""
+
+    # Get the current month and year
+    now = datetime.now()
+    month = now.month
+    year = now.year
+
+    subquery = (
+        db.session.query(
+            Vote.server_id,
+            func.count(Vote.id).label("votes_this_month_sub"),
+        )
+        .filter(
+            and_(
+                func.extract("month", Vote.created_at) == month,
+                func.extract("year", Vote.created_at) == year,
+            )
+        )
+        .group_by(Vote.server_id)
+        .subquery()
+    )
+
+    # Get servers and vote count
+    servers_query = (
+        db.session.query(
+            Server,
+            func.count(Vote.id).label("total_votes"),
+            func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
+            func.rank()
+            .over(
+                order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
+                partition_by=None,
+            )
+            .label("rank"),
+        )
+        .outerjoin(Vote, Server.id == Vote.server_id)
+        .outerjoin(subquery, Server.id == subquery.c.server_id)
+        .filter(Server.user_id == user_id)
+        .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
+        .order_by(
+            desc("votes_this_month"),
+            Server.created_at.desc(),
+        )
+    )
+
+    servers_result = servers_query.all()
+
+    return servers_result
 
 
 def _validate_banner(image_data: BytesIO) -> Image.Image:
@@ -294,8 +346,11 @@ def create_server(
     # TODO: Add testing for this validation
     user_servers = db.session.query(Server).filter(Server.user_id == user_id).all()
 
-    if len(user_servers) > 0:
-        raise Exception("User already has a server")
+    if len(user_servers) > 9:
+        raise BadRequest(
+            "You cannot create more than 10 servers",
+            user_id=user_id,
+        )
 
     banner_url = upload_banner(banner_base64) if banner_base64 else None
 

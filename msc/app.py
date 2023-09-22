@@ -80,14 +80,14 @@ def init_middleware(app):
         db.end_session()
 
         return response
-    
+
     origins = [
         "http://localhost",
         "http://localhost:3000",
         "https://minecraftservercentral.com",
         "https://www.minecraftservercentral.com",
     ]
-    
+
     # CORS
     app.add_middleware(
         CORSMiddleware,

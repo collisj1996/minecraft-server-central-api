@@ -95,6 +95,10 @@ class ServersGetOutputDto(BaseDto):
     servers: List[GetServerDto]
 
 
+class ServersMineOutputDto(BaseDto):
+    __root__: List[GetServerDto]
+
+
 class ServerCreateInputDto(BaseDto):
     name: str
     description: Optional[str] = None
