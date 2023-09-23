@@ -46,6 +46,7 @@ def init_middleware(app):
 
     @app.middleware("http")
     async def global_request_middleware(request: Request, call_next):
+
         request.state.authorised = False
 
         if config.development_mode and "msc-user-id" in request.headers:
@@ -71,6 +72,8 @@ def init_middleware(app):
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     content={"message": "Not authorised"},
                 )
+        
+        db.renew_session()
 
         logger.info("Request: %s", request)
         response = await call_next(request)
