@@ -16,6 +16,7 @@ from tests.conftest_fixtures.server_fixtures import *
 from tests.conftest_fixtures.user_fixtures import *
 from tests.conftest_fixtures.vote_fixtures import *
 from tests.conftest_mocks.server_mocks import *
+from tests.conftest_mocks.job_mocks import *
 
 
 class DisabledSession:

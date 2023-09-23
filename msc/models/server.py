@@ -1,5 +1,6 @@
 from datetime import datetime
-from uuid import uuid4
+from uuid import uuid4, UUID
+from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -44,9 +45,9 @@ class Server(db.Base):
     discord = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
-    banner_url = Column(Text, nullable=True)
-    icon_url = Column(Text, nullable=True)
-    favicon = Column(Text, nullable=True)
+    banner_checksum = Column(Text, nullable=True)
+    banner_filetype = Column(Text, nullable=True)
+    icon_checksum = Column(Text, nullable=True)
 
     gameplay = relationship("ServerGameplay", backref="server")
 
@@ -69,21 +70,22 @@ class Server(db.Base):
 
     def __init__(
         self,
-        user_id,
-        name,
-        description,
-        java_ip_address,
-        bedrock_ip_address,
-        java_port,
-        bedrock_port,
-        country_code,
-        minecraft_version,
-        votifier_ip_address,
-        votifier_port,
-        votifier_key,
-        website,
-        discord,
-        banner_url,
+        user_id: UUID,
+        name: str,
+        description: str,
+        country_code: str,
+        minecraft_version: str,
+        java_ip_address: Optional[str] = None,
+        bedrock_ip_address: Optional[str] = None,
+        java_port: Optional[int] = None,
+        bedrock_port: Optional[int] = None,
+        votifier_ip_address: Optional[str] = None,
+        votifier_port: Optional[int] = None,
+        votifier_key: Optional[str] = None,
+        website: Optional[str] = None,
+        discord: Optional[str] = None,
+        banner_checksum: Optional[str] = None,
+        banner_filetype: Optional[str] = None,
     ):
         self.name = name
         self.user_id = user_id
@@ -101,7 +103,8 @@ class Server(db.Base):
         self.discord = discord
         self.players = 0
         self.max_players = 0
-        self.banner_url = banner_url
+        self.banner_checksum = banner_checksum
+        self.banner_filetype = banner_filetype
 
         current_datetime = datetime.utcnow()
         self.created_at = current_datetime

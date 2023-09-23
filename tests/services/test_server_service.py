@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 
+from msc.errors import BadRequest
 from msc.models import Server, User, Vote
 from msc.services import server_service, vote_service, user_service
 
@@ -177,14 +178,32 @@ def test_create_server(
     assert session.query(Server).count() == 1
 
 
-def test_one_server_per_user(
+def test_10_servers_per_user(
     session,
     user_jack: User,
-    server_colcraft: Server,
 ):
     """Test that only one server can be created per user"""
 
-    with pytest.raises(Exception) as e:
+    # create 10 servers for jack
+    for i in range(1, 11):
+        # create a new server for the user
+        server = server_service.create_server(
+            name=f"My Server {i}",
+            user_id=user_jack.id,
+            description="My Server Description",
+            java_ip_address=f"1.2.3.{i}",
+            java_port=8080,
+            country_code="GB",
+            minecraft_version="1.16.5",
+            votifier_ip_address=None,
+            votifier_port=None,
+            votifier_key=None,
+            website="https://www.myserver.com",
+            discord="https://discord.gg/myserver",
+            gameplay=["Survival", "Creative", "Skyblock"],
+        )
+
+    with pytest.raises(BadRequest) as e:
         server = server_service.create_server(
             name="My Server",
             user_id=user_jack.id,
@@ -201,7 +220,7 @@ def test_one_server_per_user(
             gameplay=["Survival", "Creative", "Skyblock"],
         )
 
-    assert str(e.value) == "User already has a server"
+    assert str(e.value) == "You cannot create more than 10 servers"
 
 
 def _create_multiple_servers_for_pagination(session):
@@ -301,7 +320,7 @@ def test_update_server_all_properties(
     assert updated_server.votifier_key == "UPDATED KEY"
     assert updated_server.website == "https://www.updated.com"
     assert updated_server.discord == "https://discord.gg/updated"
-    assert updated_server.banner_url is None
+    assert updated_server.banner_checksum is None
     for updated_gameplay in [g.name for g in updated_server.gameplay]:
         assert updated_gameplay in [
             "Survival",
@@ -355,7 +374,7 @@ def test_update_server_some_properties(
     assert updated_server.votifier_key is None
     assert updated_server.website == "https://www.myserver.com"
     assert updated_server.discord == "https://discord.gg/myserver"
-    assert updated_server.banner_url is None
+    assert updated_server.banner_checksum is None
 
 
 def test_update_server_not_owned(

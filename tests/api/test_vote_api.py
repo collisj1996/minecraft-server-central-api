@@ -9,7 +9,10 @@ def test_add_vote(
     test_client: TestClient,
     user_jack: User,
     server_colcraft: Server,
+    mocker,
 ):
+    mocker.patch("msc.api.vote_api._get_client_ip", return_value="testclient")
+
     response = test_client.post(
         "/votes",
         headers=get_auth_header(user_jack.id),
@@ -27,7 +30,10 @@ def test_add_2_votes_24_hours(
     test_client: TestClient,
     user_jack: User,
     server_colcraft: Server,
+    mocker,
 ):
+    mocker.patch("msc.api.vote_api._get_client_ip", return_value="testclient")
+
     response = test_client.post(
         "/votes",
         headers=get_auth_header(user_jack.id),
@@ -63,7 +69,10 @@ def test_check_vote_info(
     test_client: TestClient,
     user_jack: User,
     server_colcraft: Server,
+    mocker,
 ):
+    mocker.patch("msc.api.vote_api._get_client_ip", return_value="testclient")
+
     # first vote
     response = test_client.post(
         "/votes",

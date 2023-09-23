@@ -2,10 +2,23 @@ from typing import List, Optional
 from uuid import UUID
 from pydantic import conint, validator, conlist
 
-from msc.constants import ALLOWED_GAMEPLAY
+from msc.constants import ALLOWED_GAMEPLAY, CDN_DOMAIN
 from msc.dto.custom_types import NOT_SET
 from msc.dto.base import BaseDto
 from msc.models import Server
+
+
+def _get_server_icon_url(
+    server_id: UUID,
+) -> Optional[str]:
+    return f"https://{CDN_DOMAIN}/icon/{server_id}.png"
+
+
+def _get_server_banner_url(
+    server_id: UUID,
+    file_extension: str,
+) -> Optional[str]:
+    return f"https://{CDN_DOMAIN}/banner/{server_id}.{file_extension}"
 
 
 class ServerDto(BaseDto):
@@ -27,7 +40,7 @@ class ServerDto(BaseDto):
     website: Optional[str]
     discord: Optional[str]
     banner_url: Optional[str]
-    favicon: Optional[str]
+    icon_url: Optional[str]
     gameplay: List[str]
 
     @classmethod
@@ -50,8 +63,8 @@ class ServerDto(BaseDto):
             votifier_key=server.votifier_key,
             website=server.website,
             discord=server.discord,
-            banner_url=server.banner_url,
-            favicon=server.favicon,
+            banner_url=_get_server_banner_url(server.id, server.banner_filetype),
+            icon_url=_get_server_icon_url(server.id),
             gameplay=[g.name for g in server.gameplay],
         )
 
@@ -87,8 +100,13 @@ class GetServerDto(ServerDto):
             votifier_key=service_output[0].votifier_key,
             website=service_output[0].website,
             discord=service_output[0].discord,
-            banner_url=service_output[0].banner_url,
-            favicon=service_output[0].favicon,
+            banner_url=_get_server_banner_url(
+                service_output[0].id,
+                service_output[0].banner_filetype,
+            ),
+            icon_url=_get_server_icon_url(
+                service_output[0].id,
+            ),
             gameplay=[g.name for g in service_output[0].gameplay],
             rank=service_output[3],
             total_votes=service_output[1],

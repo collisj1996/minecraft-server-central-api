@@ -1,7 +1,9 @@
 import logging
 from contextlib import contextmanager
 import boto3
-from uuid import uuid4
+from uuid import UUID
+import base64
+from socket import gaierror
 
 from mcstatus import BedrockServer, JavaServer
 from mcstatus.status_response import JavaStatusResponse, BedrockStatusResponse
@@ -9,6 +11,7 @@ from mcstatus.querier import QueryResponse
 
 from msc import db
 from msc.models import Server
+from msc.utils.file_utils import _get_checksum
 
 logger = logging.getLogger(__name__)
 
@@ -19,21 +22,24 @@ def _handle_db_errors():
     try:
         yield
     except Exception as e:
-        logger.error("Error adding server information: %s", e)
+        logger.error(f"Error adding server information: {e}")
         db.session.rollback()
 
 
-def _upload_server_icon(base64: str) -> str:
+def _upload_server_icon(
+    icon_base64: str,
+    server_id: UUID,
+) -> str:
     """Uploads a server icon to S3 and returns the URL"""
 
     # Remove metadata from base64 string
-    base64_data = base64.split("base64,")[1]
+    base64_data = icon_base64.split("base64,")[1]
 
     # Decode the base64 image
     decoded_data = base64.b64decode(base64_data.encode() + b"==")
 
     s3 = boto3.client("s3")
-    key = f"icons/{uuid4()}.png"
+    key = f"icon/{server_id}.png"
 
     try:
         s3.put_object(
@@ -43,15 +49,10 @@ def _upload_server_icon(base64: str) -> str:
         )
     except Exception as e:
         logger.error(f"Error uploading server icon: {e}")
-        return None
-
-    return f"https://cdn.minecraftservercentral.com/{key}"
 
 
 def poll_bedrock_server(server: Server):
     """Polls a bedrock server for information"""
-
-    # TODO: Add test for this
 
     ip = server.bedrock_ip_address
 
@@ -62,12 +63,21 @@ def poll_bedrock_server(server: Server):
 
     try:
         status: BedrockStatusResponse = minecraft_server.status()
+
         server.is_online = True
         server.players = status.players.online
         server.max_players = status.players.max
+
+    except TimeoutError as e:
+        server.is_online = False
+        server.players = 0
+    except gaierror as e:
+        server.is_online = False
+        server.players = 0
     except Exception as e:
         server.is_online = False
         server.players = 0
+        logger.error(f"Unhandled error polling bedrock server: {e}")
 
     with _handle_db_errors():
         db.session.commit()
@@ -75,8 +85,6 @@ def poll_bedrock_server(server: Server):
 
 def poll_java_server(server: Server):
     """Polls a java server for information"""
-
-    # TODO: Add test for this
 
     ip = server.java_ip_address
 
@@ -90,52 +98,57 @@ def poll_java_server(server: Server):
         status: JavaStatusResponse = minecraft_server.status()
 
         server.is_online = True
-
-        logger.info("is online")
-        # TODO: Add MOTD
-        # server.motd = status.description
         server.players = status.players.online
         server.max_players = status.players.max
-        # server.version = status.version.name
-
-        logger.info(f"has players {status.players.online}")
-        logger.info(f"max players {status.players.max}")
 
         if status.icon:
-            logger.info("has icon")
-            server.icon_url = _upload_server_icon(status.icon)
+            checksum = _get_checksum(status.icon)
 
+            if checksum != server.icon_checksum:
+                server.icon_checksum = checksum
+                _upload_server_icon(
+                    icon_base64=status.icon,
+                    server_id=server.id,
+                )
+        else:
+            server.icon_checksum = None
+
+        with _handle_db_errors():
+            db.session.commit()
+            commited = True
+
+    except TimeoutError as timeout_error:
+        server.is_online = False
+        server.players = 0
+        # Dont commit here, we need to check query
+    except gaierror as gai_error:
+        server.is_online = False
+        server.players = 0
+        # Dont commit here, we need to check query
     except Exception as e:
         server.is_online = False
         server.players = 0
-        logger.info("is offline")
-        logger.info("failed to get status")
-        logger.info(e)
-
-    with _handle_db_errors():
-        db.session.commit()
-        commited = True
+        logger.error(f"Unhandled error polling java server by status: {e}")
+        # Dont commit here, we need to check query
 
     # If we have commited, we don't need to check query
     if commited:
         return
 
     try:
-        query: QueryResponse = server.query()
+        query: QueryResponse = minecraft_server.query()
 
         server.is_online = True
         server.players = query.players.online
         server.max_players = query.players.max
-        # TODO Add these fields
-        # server.minecraft_version = query.software.version
-        # server.plugins = query.software.plugins
-        # server.map = query.map
-        # server.motd = query.motd.clean
-        # server.player_names = query.players.names
 
+    except TimeoutError as timeout_error:
+        server.is_online = False
+        server.players = 0
     except Exception as e:
         server.is_online = False
         server.players = 0
+        logger.error(f"Unhandled error polling java server by query: {e}")
 
     with _handle_db_errors():
         db.session.commit()
@@ -146,16 +159,27 @@ def poll_servers():
 
     logger.info("Polling servers")
 
+    # Renew the session
+    db.renew_session()
+
+    # TODO: Do we want to make this async?
+    servers = []
+
     # Get all servers
-    servers = db.session.query(Server).all()
+    with _handle_db_errors():
+        servers = db.session.query(Server).all()
 
     for server in servers:
         # check what type of server we are dealing with
 
-        if server.java_ip_address:
+        if server.java_ip_address and server.bedrock_ip_address:
+            # we only need to poll java server
             poll_java_server(server)
+        else:
+            if server.java_ip_address:
+                poll_java_server(server)
 
-        if server.bedrock_ip_address:
-            poll_bedrock_server(server)
+            if server.bedrock_ip_address:
+                poll_bedrock_server(server)
 
     db.end_session()

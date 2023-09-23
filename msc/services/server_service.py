@@ -3,12 +3,13 @@ from contextlib import contextmanager
 from datetime import datetime
 from io import BytesIO
 from typing import Optional, List
-from uuid import uuid4, UUID
+from uuid import UUID
 
 import boto3
 from PIL import Image
-from sqlalchemy import and_, desc, func, text
+from sqlalchemy import and_, desc, func
 
+from msc.utils.file_utils import _get_checksum
 from msc import db
 from msc.dto.custom_types import NOT_SET
 from msc.models import Server, Vote, ServerGameplay
@@ -202,7 +203,10 @@ def _validate_banner(image_data: BytesIO) -> Image.Image:
     return img
 
 
-def upload_banner(banner_base64: str) -> str:
+def _upload_banner(
+    banner_base64: str,
+    server_id: UUID,
+) -> str:
     """Uploads a banner to S3 and returns the URL, raises an exception if the upload fails"""
 
     # Remove metadata from base64 string
@@ -218,7 +222,7 @@ def upload_banner(banner_base64: str) -> str:
     img = _validate_banner(image_data)
 
     s3 = boto3.client("s3")
-    key = f"{uuid4()}.{img.format.lower()}"
+    key = f"banner/{server_id}.{img.format.lower()}"
 
     try:
         s3.put_object(
@@ -229,7 +233,7 @@ def upload_banner(banner_base64: str) -> str:
     except Exception as e:
         raise e
 
-    return f"https://cdn.minecraftservercentral.com/{key}"
+    return img.format.lower()
 
 
 def update_server(
@@ -290,9 +294,16 @@ def update_server(
 
     if banner_base64 != NOT_SET:
         if banner_base64 is None:
-            server.banner_url = None
+            server.banner_checksum = None
+            server.banner_filetype = None
         else:
-            server.banner_url = upload_banner(banner_base64)
+            banner_checksum = _get_checksum(banner_base64)
+            if banner_checksum != server.banner_checksum:
+                server.banner_checksum = banner_checksum
+                server.banner_filetype = _upload_banner(
+                    banner_base64=banner_base64,
+                    server_id=server_id,
+                )
 
     if description != NOT_SET:
         server.description = description
@@ -353,7 +364,6 @@ def create_server(
 ):
     """Creates a server"""
 
-    # TODO: Add testing for this validation
     user_servers = db.session.query(Server).filter(Server.user_id == user_id).all()
 
     if len(user_servers) > 9:
@@ -361,8 +371,6 @@ def create_server(
             "You cannot create more than 10 servers",
             user_id=user_id,
         )
-
-    banner_url = upload_banner(banner_base64) if banner_base64 else None
 
     server = Server(
         name=name,
@@ -379,13 +387,23 @@ def create_server(
         votifier_key=votifier_key,
         website=website,
         discord=discord,
-        banner_url=banner_url,
     )
 
     db.session.add(server)
 
     with _handle_db_errors():
         db.session.flush()
+
+    if banner_base64:
+        banner_checksum = _get_checksum(banner_base64)
+
+        file_type = _upload_banner(
+            banner_base64=banner_base64,
+            server_id=server.id,
+        )
+
+        server.banner_filetype = file_type
+        server.banner_checksum = banner_checksum
 
     for gameplay_name in gameplay:
         server_gameplay = ServerGameplay(
