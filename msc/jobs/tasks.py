@@ -110,6 +110,7 @@ def poll_java_server(server: Server):
         server.players = 0
         logger.info("is offline")
         logger.info("failed to get status")
+        logger.info(e)
 
     with _handle_db_errors():
         db.session.commit()
