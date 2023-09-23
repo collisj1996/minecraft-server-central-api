@@ -12,8 +12,10 @@ class ServerDto(BaseDto):
     id: UUID
     name: str
     description: Optional[str]
-    ip_address: str
-    port: Optional[int]
+    java_ip_address: Optional[str]
+    bedrock_ip_address: Optional[str]
+    java_port: Optional[int]
+    bedrock_port: Optional[int]
     players: int
     max_players: int
     is_online: bool
@@ -34,8 +36,10 @@ class ServerDto(BaseDto):
             id=server.id,
             name=server.name,
             description=server.description,
-            ip_address=server.ip_address,
-            port=server.port,
+            java_ip_address=server.java_ip_address,
+            bedrock_ip_address=server.bedrock_ip_address,
+            java_port=server.java_port,
+            bedrock_port=server.bedrock_port,
             players=server.players,
             max_players=server.max_players,
             is_online=server.is_online,
@@ -69,8 +73,10 @@ class GetServerDto(ServerDto):
             id=service_output[0].id,
             name=service_output[0].name,
             description=service_output[0].description,
-            ip_address=service_output[0].ip_address,
-            port=service_output[0].port,
+            java_ip_address=service_output[0].java_ip_address,
+            bedrock_ip_address=service_output[0].bedrock_ip_address,
+            java_port=service_output[0].java_port,
+            bedrock_port=service_output[0].bedrock_port,
             players=service_output[0].players,
             max_players=service_output[0].max_players,
             is_online=service_output[0].is_online,
@@ -102,8 +108,10 @@ class ServersMineOutputDto(BaseDto):
 class ServerCreateInputDto(BaseDto):
     name: str
     description: Optional[str] = None
-    ip_address: str
-    port: Optional[int] = None
+    java_ip_address: Optional[str] = None
+    bedrock_ip_address: Optional[str] = None
+    java_port: Optional[int] = None
+    bedrock_port: Optional[int] = None
     country_code: str
     minecraft_version: str
     votifier_ip_address: Optional[str] = None
@@ -113,6 +121,16 @@ class ServerCreateInputDto(BaseDto):
     discord: Optional[str] = None
     banner_base64: Optional[str] = None
     gameplay: conlist(str, min_items=3, max_items=10)
+
+    @validator("bedrock_ip_address")
+    def validate_ip_addresses(cls, ip_address, values):
+        # TODO: Add test for this
+        if "java_ip_address" not in values and not ip_address:
+            raise ValueError(
+                "At least one of java_ip_address or bedrock_ip_address must be set"
+            )
+
+        return ip_address
 
     @validator("gameplay")
     def validate_gameplay(cls, gameplay):
@@ -127,8 +145,10 @@ class ServerCreateInputDto(BaseDto):
 class ServerUpdateInputDto(BaseDto):
     name: Optional[str] = NOT_SET
     description: Optional[str] = NOT_SET
-    ip_address: Optional[str] = NOT_SET
-    port: Optional[int] = NOT_SET
+    java_ip_address: Optional[str] = NOT_SET
+    bedrock_ip_address: Optional[str] = NOT_SET
+    java_port: Optional[int] = NOT_SET
+    bedrock_port: Optional[int] = NOT_SET
     country_code: Optional[str] = NOT_SET
     minecraft_version: Optional[str] = NOT_SET
     votifier_ip_address: Optional[str] = NOT_SET
@@ -138,6 +158,16 @@ class ServerUpdateInputDto(BaseDto):
     discord: Optional[str] = NOT_SET
     banner_base64: Optional[str] = NOT_SET
     gameplay: Optional[conlist(str, min_items=3, max_items=10)] = NOT_SET
+
+    @validator("bedrock_ip_address")
+    def validate_ip_addresses(cls, ip_address, values):
+        # TODO: Add test for this
+        if "java_ip_address" not in values and not ip_address:
+            raise ValueError(
+                "At least one of java_ip_address or bedrock_ip_address must be set"
+            )
+
+        return ip_address
 
     @validator("gameplay")
     def validate_gameplay(cls, gameplay):

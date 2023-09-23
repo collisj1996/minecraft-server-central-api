@@ -236,11 +236,13 @@ def update_server(
     server_id: UUID,
     user_id: UUID,
     name: Optional[str] = NOT_SET,
-    ip_address: Optional[str] = NOT_SET,
+    java_ip_address: Optional[str] = NOT_SET,
+    bedrock_ip_address: Optional[str] = NOT_SET,
+    java_port: Optional[int] = NOT_SET,
+    bedrock_port: Optional[int] = NOT_SET,
     country_code: Optional[str] = NOT_SET,
     minecraft_version: Optional[str] = NOT_SET,
     banner_base64: Optional[str] = NOT_SET,
-    port: Optional[int] = NOT_SET,
     description: Optional[str] = NOT_SET,
     votifier_ip_address: Optional[str] = NOT_SET,
     votifier_port: Optional[int] = NOT_SET,
@@ -268,8 +270,17 @@ def update_server(
     if name != NOT_SET:
         server.name = name
 
-    if ip_address != NOT_SET:
-        server.ip_address = ip_address
+    if java_ip_address != NOT_SET:
+        server.java_ip_address = java_ip_address
+
+    if bedrock_ip_address != NOT_SET:
+        server.bedrock_ip_address = bedrock_ip_address
+
+    if java_port != NOT_SET:
+        server.java_port = java_port
+
+    if bedrock_port != NOT_SET:
+        server.bedrock_port = bedrock_port
 
     if country_code != NOT_SET:
         server.country_code = country_code
@@ -282,9 +293,6 @@ def update_server(
             server.banner_url = None
         else:
             server.banner_url = upload_banner(banner_base64)
-
-    if port != NOT_SET:
-        server.port = port
 
     if description != NOT_SET:
         server.description = description
@@ -328,12 +336,14 @@ def update_server(
 def create_server(
     name: str,
     user_id: UUID,
-    ip_address: str,
     country_code: str,
     minecraft_version: str,
     gameplay: List[str],
+    java_ip_address: Optional[str] = None,
+    bedrock_ip_address: Optional[str] = None,
+    java_port: Optional[int] = None,
+    bedrock_port: Optional[int] = None,
     banner_base64: Optional[str] = None,
-    port: Optional[int] = None,
     description: Optional[str] = None,
     votifier_ip_address: Optional[str] = None,
     votifier_port: Optional[int] = None,
@@ -358,8 +368,10 @@ def create_server(
         name=name,
         user_id=user_id,
         description=description,
-        ip_address=ip_address,
-        port=port,
+        java_ip_address=java_ip_address,
+        bedrock_ip_address=bedrock_ip_address,
+        java_port=java_port,
+        bedrock_port=bedrock_port,
         country_code=country_code,
         minecraft_version=minecraft_version,
         votifier_ip_address=votifier_ip_address,

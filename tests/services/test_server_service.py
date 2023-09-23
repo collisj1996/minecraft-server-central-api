@@ -158,8 +158,8 @@ def test_create_server(
         name="My Server",
         user_id=user_jack.id,
         description="My Server Description",
-        ip_address="192.168.1.100",
-        port=8080,
+        java_ip_address="192.168.1.100",
+        java_port=8080,
         country_code="GB",
         minecraft_version="1.16.5",
         votifier_ip_address=None,
@@ -189,8 +189,8 @@ def test_one_server_per_user(
             name="My Server",
             user_id=user_jack.id,
             description="My Server Description",
-            ip_address="192.168.1.100",
-            port=8080,
+            java_ip_address="192.168.1.100",
+            java_port=8080,
             country_code="GB",
             minecraft_version="1.16.5",
             votifier_ip_address=None,
@@ -220,8 +220,8 @@ def _create_multiple_servers_for_pagination(session):
             name=f"My Server {i}",
             user_id=user.id,
             description="My Server Description",
-            ip_address=f"1.2.3.{i}",
-            port=8080,
+            java_ip_address=f"1.2.3.{i}",
+            java_port=8080,
             country_code="GB",
             minecraft_version="1.16.5",
             votifier_ip_address=None,
@@ -276,8 +276,8 @@ def test_update_server_all_properties(
         user_id=user_jack.id,
         name="UPDATED NAME",
         description="UPDATED DESCRIPTION",
-        ip_address="0.0.0.0",
-        port=9999,
+        java_ip_address="0.0.0.0",
+        java_port=9999,
         country_code="FR",
         minecraft_version="9.9.9",
         votifier_ip_address="0.0.0.0",
@@ -292,8 +292,8 @@ def test_update_server_all_properties(
     assert updated_server
     assert updated_server.name == "UPDATED NAME"
     assert updated_server.description == "UPDATED DESCRIPTION"
-    assert updated_server.ip_address == "0.0.0.0"
-    assert updated_server.port == 9999
+    assert updated_server.java_ip_address == "0.0.0.0"
+    assert updated_server.java_port == 9999
     assert updated_server.country_code == "FR"
     assert updated_server.minecraft_version == "9.9.9"
     assert updated_server.votifier_ip_address == "0.0.0.0"
@@ -323,8 +323,8 @@ def test_update_server_some_properties(
         name="My Server",
         user_id=user_jack.id,
         description="My Server Description",
-        ip_address="0.0.0.0",
-        port=1234,
+        java_ip_address="0.0.0.0",
+        java_port=1234,
         country_code="GB",
         minecraft_version="1.16.5",
         votifier_ip_address=None,
@@ -346,8 +346,8 @@ def test_update_server_some_properties(
     assert updated_server
     assert updated_server.name == "UPDATED NAME"
     assert updated_server.description == "UPDATED DESCRIPTION"
-    assert updated_server.ip_address == "0.0.0.0"
-    assert updated_server.port == 1234
+    assert updated_server.java_ip_address == "0.0.0.0"
+    assert updated_server.java_port == 1234
     assert updated_server.country_code == "GB"
     assert updated_server.minecraft_version == "1.16.5"
     assert updated_server.votifier_ip_address is None
@@ -438,7 +438,7 @@ def test_get_my_servers(
         name="My Server 2",
         user_id=user_jack.id,
         description="My Server Description",
-        ip_address="1.2.3.4",
+        java_ip_address="1.2.3.4",
         gameplay=["Survival", "Creative", "Skyblock"],
         country_code="GB",
         minecraft_version="1.16.5",

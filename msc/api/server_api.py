@@ -33,8 +33,10 @@ def create_server(
         name=body.name,
         user_id=user_id,
         description=body.description,
-        ip_address=body.ip_address,
-        port=body.port,
+        java_ip_address=body.java_ip_address,
+        bedrock_ip_address=body.bedrock_ip_address,
+        java_port=body.java_port,
+        bedrock_port=body.bedrock_port,
         country_code=body.country_code,
         minecraft_version=body.minecraft_version,
         votifier_ip_address=body.votifier_ip_address,
@@ -47,6 +49,23 @@ def create_server(
     )
 
     return ServerDto.from_service(server)
+
+
+@router.get("/servers/mine")
+def get_my_servers(
+    request: Request,
+) -> ServersMineOutputDto:
+    """Endpoint for getting all servers"""
+
+    user_id = request.state.user_id
+
+    my_servers = server_service.get_my_servers(user_id)
+
+    dto = ServersMineOutputDto(
+        __root__=[GetServerDto.from_service(s) for s in my_servers],
+    )
+
+    return dto
 
 
 @router.get("/servers/{server_id}")
@@ -78,23 +97,6 @@ def get_servers(
     return dto
 
 
-@router.get("/servers/mine")
-def get_my_servers(
-    request: Request,
-) -> ServersGetOutputDto:
-    """Endpoint for getting all servers"""
-
-    user_id = request.state.user_id
-
-    my_servers = server_service.get_my_servers(user_id)
-
-    dto = ServersMineOutputDto(
-        __root__=[GetServerDto.from_service(s) for s in my_servers],
-    )
-
-    return dto
-
-
 @router.patch("/servers/{server_id}")
 def update_server(
     request: Request,
@@ -112,8 +114,10 @@ def update_server(
         name=body.name,
         user_id=UUID(user_id),
         description=body.description,
-        ip_address=body.ip_address,
-        port=body.port,
+        java_ip_address=body.java_ip_address,
+        bedrock_ip_address=body.bedrock_ip_address,
+        java_port=body.java_port,
+        bedrock_port=body.bedrock_port,
         country_code=body.country_code,
         minecraft_version=body.minecraft_version,
         votifier_ip_address=body.votifier_ip_address,

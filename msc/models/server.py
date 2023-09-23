@@ -9,6 +9,7 @@ from sqlalchemy import (
     Integer,
     Text,
     UniqueConstraint,
+    CheckConstraint,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -27,8 +28,10 @@ class Server(db.Base):
     user_id = Column(UUID(as_uuid=True), nullable=False)
     name = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
-    ip_address = Column(Text, nullable=False)
-    port = Column(Integer, nullable=True)
+    java_ip_address = Column(Text, nullable=True)
+    java_port = Column(Integer, nullable=True)
+    bedrock_ip_address = Column(Text, nullable=True)
+    bedrock_port = Column(Text, nullable=True)
     players = Column(Integer, nullable=False)
     max_players = Column(Integer, nullable=False)
     is_online = Column(Boolean, nullable=False, default=False)
@@ -42,6 +45,7 @@ class Server(db.Base):
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
     banner_url = Column(Text, nullable=True)
+    icon_url = Column(Text, nullable=True)
     favicon = Column(Text, nullable=True)
 
     gameplay = relationship("ServerGameplay", backref="server")
@@ -56,6 +60,11 @@ class Server(db.Base):
             ["user.id"],
             ondelete="CASCADE",
         ),
+        # check constraint to ensure that at least one of java_ip_address or bedrock_ip_address is not null
+        CheckConstraint(
+            "java_ip_address IS NOT NULL OR bedrock_ip_address IS NOT NULL",
+            name="check_ip_address",
+        ),
     )
 
     def __init__(
@@ -63,8 +72,10 @@ class Server(db.Base):
         user_id,
         name,
         description,
-        ip_address,
-        port,
+        java_ip_address,
+        bedrock_ip_address,
+        java_port,
+        bedrock_port,
         country_code,
         minecraft_version,
         votifier_ip_address,
@@ -77,8 +88,10 @@ class Server(db.Base):
         self.name = name
         self.user_id = user_id
         self.description = description
-        self.ip_address = ip_address
-        self.port = port
+        self.java_ip_address = java_ip_address
+        self.bedrock_ip_address = bedrock_ip_address
+        self.java_port = java_port
+        self.bedrock_port = bedrock_port
         self.country_code = country_code
         self.minecraft_version = minecraft_version
         self.votifier_ip_address = votifier_ip_address
