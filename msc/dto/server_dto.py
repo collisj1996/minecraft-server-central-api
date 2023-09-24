@@ -9,16 +9,21 @@ from msc.models import Server
 
 
 def _get_server_icon_url(
-    server_id: UUID,
+    server: Server,
 ) -> Optional[str]:
-    return f"https://{CDN_DOMAIN}/icon/{server_id}.png"
+    return (
+        f"https://{CDN_DOMAIN}/icon/{server.id}.png" if server.icon_checksum else None
+    )
 
 
 def _get_server_banner_url(
-    server_id: UUID,
-    file_extension: str,
+    server: Server,
 ) -> Optional[str]:
-    return f"https://{CDN_DOMAIN}/banner/{server_id}.{file_extension}"
+    return (
+        f"https://{CDN_DOMAIN}/banner/{server.id}.{server.banner_filetype}"
+        if server.banner_checksum
+        else None
+    )
 
 
 class ServerDto(BaseDto):
@@ -63,8 +68,8 @@ class ServerDto(BaseDto):
             votifier_key=server.votifier_key,
             website=server.website,
             discord=server.discord,
-            banner_url=_get_server_banner_url(server.id, server.banner_filetype),
-            icon_url=_get_server_icon_url(server.id),
+            banner_url=_get_server_banner_url(server),
+            icon_url=_get_server_icon_url(server),
             gameplay=[g.name for g in server.gameplay],
         )
 
@@ -100,13 +105,8 @@ class GetServerDto(ServerDto):
             votifier_key=service_output[0].votifier_key,
             website=service_output[0].website,
             discord=service_output[0].discord,
-            banner_url=_get_server_banner_url(
-                service_output[0].id,
-                service_output[0].banner_filetype,
-            ),
-            icon_url=_get_server_icon_url(
-                service_output[0].id,
-            ),
+            banner_url=_get_server_banner_url(service_output[0]),
+            icon_url=_get_server_icon_url(service_output[0]),
             gameplay=[g.name for g in service_output[0].gameplay],
             rank=service_output[3],
             total_votes=service_output[1],
