@@ -48,6 +48,7 @@ class Server(db.Base):
     banner_checksum = Column(Text, nullable=True)
     banner_filetype = Column(Text, nullable=True)
     icon_checksum = Column(Text, nullable=True)
+    last_pinged_at = Column(DateTime, nullable=True)
 
     gameplay = relationship("ServerGameplay", backref="server")
 

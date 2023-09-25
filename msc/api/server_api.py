@@ -11,8 +11,9 @@ from msc.dto.server_dto import (
     ServerDeleteOutputDto,
     ServersGetInputDto,
     ServersMineOutputDto,
+    ServerPingOutputDto,
 )
-from msc.services import server_service
+from msc.services import server_service, ping_service
 from msc.utils.api_utils import auth_required
 
 router = APIRouter()
@@ -148,4 +149,24 @@ def delete_server(
 
     return ServerDeleteOutputDto(
         deleted_server_id=deleted_server_id,
+    )
+
+
+@router.post("/servers/{server_id}/ping")
+@auth_required
+def ping_server(
+    request: Request,
+    server_id: str,
+) -> ServerPingOutputDto:
+    """Endpoint for pinging a server"""
+
+    user_id = request.state.user_id
+
+    response = ping_service.poll_server_by_id(
+        server_id=UUID(server_id),
+        user_id=UUID(user_id),
+    )
+
+    return ServerPingOutputDto(
+        message=response,
     )

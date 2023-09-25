@@ -14,6 +14,7 @@ from msc import db
 from msc.dto.custom_types import NOT_SET
 from msc.models import Server, Vote, ServerGameplay
 from msc.errors import BadRequest
+from msc.services import ping_service
 
 
 @contextmanager
@@ -338,6 +339,12 @@ def update_server(
 
             db.session.add(server_gameplay)
 
+    # poll the server to check it is online and get extra data
+    ping_service.poll_server(
+        server=server,
+        commit=False,
+    )
+
     with _handle_db_errors():
         db.session.commit()
 
@@ -393,6 +400,12 @@ def create_server(
 
     with _handle_db_errors():
         db.session.flush()
+
+    # poll the server to check it is online and get extra data
+    ping_service.poll_server(
+        server=server,
+        commit=False,
+    )
 
     if banner_base64:
         banner_checksum = _get_checksum(banner_base64)

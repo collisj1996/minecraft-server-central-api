@@ -25,5 +25,5 @@ def downgrade_to_version(request: Request, body: dict = Body(...)):
 
 @router.post("/migration/upgrade")
 @admin_required
-def upgrade(Request: Request):
+def upgrade(request: Request):
     return run_migrations()

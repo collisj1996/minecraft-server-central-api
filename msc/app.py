@@ -48,6 +48,7 @@ def init_middleware(app):
     @app.middleware("http")
     async def global_request_middleware(request: Request, call_next):
         request.state.authorised = False
+        request.state.is_admin = False
 
         if config.development_mode and "msc-user-id" in request.headers:
             request.state.user_id = request.headers["msc-user-id"]

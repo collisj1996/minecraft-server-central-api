@@ -4,6 +4,7 @@ import boto3
 from uuid import UUID
 import base64
 from socket import gaierror
+from datetime import datetime
 
 from mcstatus import BedrockServer, JavaServer
 from mcstatus.status_response import JavaStatusResponse, BedrockStatusResponse
@@ -67,6 +68,7 @@ def poll_bedrock_server(server: Server):
         server.is_online = True
         server.players = status.players.online
         server.max_players = status.players.max
+        server.last_pinged_at = datetime.utcnow()
 
     except TimeoutError as e:
         server.is_online = False
@@ -100,6 +102,7 @@ def poll_java_server(server: Server):
         server.is_online = True
         server.players = status.players.online
         server.max_players = status.players.max
+        server.last_pinged_at = datetime.utcnow()
 
         if status.icon:
             checksum = _get_checksum(status.icon)
@@ -141,6 +144,7 @@ def poll_java_server(server: Server):
         server.is_online = True
         server.players = query.players.online
         server.max_players = query.players.max
+        server.last_pinged_at = datetime.utcnow()
 
     except TimeoutError as timeout_error:
         server.is_online = False

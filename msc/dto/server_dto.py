@@ -3,7 +3,7 @@ from uuid import UUID
 from pydantic import conint, validator, conlist
 
 from msc.constants import ALLOWED_GAMEPLAY, CDN_DOMAIN
-from msc.dto.custom_types import NOT_SET
+from msc.dto.custom_types import NOT_SET, DateTimeUTC
 from msc.dto.base import BaseDto
 from msc.models import Server
 
@@ -47,6 +47,9 @@ class ServerDto(BaseDto):
     banner_url: Optional[str]
     icon_url: Optional[str]
     gameplay: List[str]
+    created_at: DateTimeUTC
+    updated_at: DateTimeUTC
+    last_pinged_at: Optional[DateTimeUTC]
 
     @classmethod
     def from_service(cls, server: Server):
@@ -71,6 +74,9 @@ class ServerDto(BaseDto):
             banner_url=_get_server_banner_url(server),
             icon_url=_get_server_icon_url(server),
             gameplay=[g.name for g in server.gameplay],
+            created_at=server.created_at,
+            updated_at=server.updated_at,
+            last_pinged_at=server.last_pinged_at,
         )
 
 
@@ -108,6 +114,9 @@ class GetServerDto(ServerDto):
             banner_url=_get_server_banner_url(service_output[0]),
             icon_url=_get_server_icon_url(service_output[0]),
             gameplay=[g.name for g in service_output[0].gameplay],
+            created_at=service_output[0].created_at,
+            updated_at=service_output[0].updated_at,
+            last_pinged_at=service_output[0].last_pinged_at,
             rank=service_output[3],
             total_votes=service_output[1],
             votes_this_month=service_output[2],
@@ -199,3 +208,7 @@ class ServerUpdateInputDto(BaseDto):
 
 class ServerDeleteOutputDto(BaseDto):
     deleted_server_id: UUID
+
+
+class ServerPingOutputDto(BaseDto):
+    message: str
