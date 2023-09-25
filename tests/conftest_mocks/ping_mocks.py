@@ -2,8 +2,8 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def mock_upload_icon(mocker):
+def mock_poll_server(mocker):
     mocker.patch(
-        "msc.services.ping_service._upload_server_icon",
+        "msc.services.ping_service.poll_server",
         return_value=None,
     )

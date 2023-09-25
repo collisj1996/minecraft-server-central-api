@@ -17,6 +17,7 @@ from tests.conftest_fixtures.user_fixtures import *
 from tests.conftest_fixtures.vote_fixtures import *
 from tests.conftest_mocks.server_mocks import *
 from tests.conftest_mocks.job_mocks import *
+from tests.conftest_mocks.ping_mocks import *
 
 
 class DisabledSession:
@@ -96,6 +97,11 @@ def test_client(application):
     return TestClient(application)
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def disable_development_mode():
     config.development_mode = False
+
+
+@pytest.fixture(autouse=True)
+def disable_scheduled_jobs(mocker):
+    mocker.patch("msc.app.scheduler.start", return_value=None)

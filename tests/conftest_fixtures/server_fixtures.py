@@ -1,7 +1,8 @@
 import pytest
+from uuid import uuid4
 
 from msc.models import User
-from msc.services import server_service
+from msc.services import server_service, user_service
 
 
 @pytest.fixture
@@ -56,3 +57,40 @@ def server_hypixel(user_alan: User):
     )
 
     return server
+
+
+@pytest.fixture
+def many_servers():
+    """Returns a server with default values"""
+
+    output = {
+        "servers_list": [],
+        "users_list": [],
+        "servers_map": {},
+        "users_map": {},
+    }
+
+    for i in range(1, 100):
+        user = user_service.add_user(
+            user_id=uuid4(),
+            username=f"User {i}",
+            email=f"user{i}@gmail.com",
+        )
+
+        server = server_service.create_server(
+            name=f"Server {i}",
+            user_id=user.id,
+            description="My Server Description",
+            java_ip_address=f"{i}.168.1.100",
+            java_port=8080,
+            country_code="GB",
+            minecraft_version="1.16.5",
+            gameplay=["Survival", "Creative", "Skyblock"],
+        )
+
+        output["servers_list"].append(server)
+        output["users_list"].append(user)
+        output["servers_map"][server.id] = server
+        output["users_map"][user.id] = user
+
+    return output

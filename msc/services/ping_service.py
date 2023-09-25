@@ -4,13 +4,15 @@ import boto3
 from uuid import UUID
 import base64
 from socket import gaierror
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
+import asyncio
 
 from mcstatus import BedrockServer, JavaServer
 from mcstatus.status_response import JavaStatusResponse, BedrockStatusResponse
 from mcstatus.querier import QueryResponse
 
+from msc.constants import ASYNC_POLL_BATCH_SIZE
 from msc import db
 from msc.models import Server
 from msc.utils.file_utils import _get_checksum
@@ -206,12 +208,12 @@ def poll_bedrock_server(
         server.players = 0
         logger.error(f"Unhandled error polling bedrock server: {e}")
 
-    if not is_online:
-        return False
-
     if commit:
         with _handle_db_errors():
             db.session.commit()
+
+    if not is_online:
+        return False
 
 
 def poll_java_server(
@@ -294,12 +296,133 @@ def poll_java_server(
         server.players = 0
         logger.error(f"Unhandled error polling java server by query: {e}")
 
-    if not is_online:
-        return False
-
     if commit:
         with _handle_db_errors():
             db.session.commit()
+
+    if not is_online:
+        return False
+
+
+async def poll_bedrock_server_async(
+    server: Server,
+):
+    """Polls a bedrock server for information asyncronously"""
+
+    ip = server.bedrock_ip_address
+
+    if server.bedrock_port:
+        ip = f"{ip}:{server.bedrock_port}"
+
+    minecraft_server = BedrockServer.lookup(ip)
+
+    is_online = False
+
+    try:
+        status: BedrockStatusResponse = await minecraft_server.async_status()
+
+        is_online = True
+        server.is_online = is_online
+        server.players = status.players.online
+        server.max_players = status.players.max
+        server.last_pinged_at = datetime.utcnow()
+
+    except TimeoutError as e:
+        server.is_online = False
+        server.players = 0
+    except gaierror as e:
+        server.is_online = False
+        server.players = 0
+    except Exception as e:
+        server.is_online = False
+        server.players = 0
+        logger.error(f"Unhandled error polling bedrock server: {e}")
+
+    with _handle_db_errors():
+        db.session.commit()
+
+    if not is_online:
+        return
+
+
+async def poll_java_server_async(
+    server: Server,
+):
+    """Polls a java server for information asyncronously"""
+
+    ip = server.java_ip_address
+
+    if server.java_port:
+        ip = f"{ip}:{server.java_port}"
+
+    is_online = False
+
+    try:
+        status: JavaStatusResponse = await (
+            await JavaServer.async_lookup(ip)
+        ).async_status()
+
+        is_online = True
+        server.is_online = is_online
+        server.players = status.players.online
+        server.max_players = status.players.max
+        server.last_pinged_at = datetime.utcnow()
+
+        if status.icon:
+            checksum = _get_checksum(status.icon)
+
+            if checksum != server.icon_checksum:
+                server.icon_checksum = checksum
+                _upload_server_icon(
+                    icon_base64=status.icon,
+                    server_id=server.id,
+                )
+        else:
+            server.icon_checksum = None
+
+        with _handle_db_errors():
+            db.session.commit()
+
+    except TimeoutError as timeout_error:
+        server.is_online = False
+        server.players = 0
+        # Dont commit here, we need to check query
+    except gaierror as gai_error:
+        server.is_online = False
+        server.players = 0
+        # Dont commit here, we need to check query
+    except Exception as e:
+        server.is_online = False
+        server.players = 0
+        logger.error(f"Unhandled error polling java server by status: {e}")
+        # Dont commit here, we need to check query
+
+    # If server is online by status, we dont need to check query
+    if is_online:
+        return True
+
+    try:
+        query: QueryResponse = await (await JavaServer.async_lookup(ip)).async_query()
+
+        is_online = True
+        server.is_online = is_online
+        server.players = query.players.online
+        server.max_players = query.players.max
+        server.last_pinged_at = datetime.utcnow()
+
+    except TimeoutError as timeout_error:
+        server.is_online = False
+        server.players = 0
+    except Exception as e:
+        server.is_online = False
+        server.players = 0
+        logger.error(f"Unhandled error polling java server by query: {e}")
+
+    with _handle_db_errors():
+        db.session.commit()
+
+    if not is_online:
+        return False
 
 
 def poll_server_by_id(
@@ -330,7 +453,10 @@ def poll_server_by_id(
     return "success"
 
 
-def poll_server(server: Server, commit: bool = True):
+def poll_server(
+    server: Server,
+    commit: bool = True,
+):
     """Polls a server for information"""
 
     is_online = False
@@ -356,3 +482,102 @@ def poll_server(server: Server, commit: bool = True):
 
     if not is_online:
         raise ServerUnreachable("Server is offline")
+
+
+async def poll_server_async(server: Server):
+    """Polls a server for information asyncronously"""
+
+    try:
+        if server.java_ip_address and server.bedrock_ip_address:
+            # we only need to poll java server
+            await poll_java_server_async(
+                server=server,
+            )
+        else:
+            if server.java_ip_address:
+                await poll_java_server_async(
+                    server=server,
+                )
+
+            if server.bedrock_ip_address:
+                await poll_bedrock_server_async(
+                    server=server,
+                )
+    except Exception as e:
+        return
+
+
+def poll_servers():
+    """Polls minecraft servers for information"""
+
+    logger.info("Polling servers")
+
+    # Renew the session
+    db.renew_session()
+
+    # TODO: Do we want to make this async?
+    servers = []
+
+    # Get all servers
+    with _handle_db_errors():
+        servers = db.session.query(Server).all()
+
+    for server in servers:
+        # check what type of server we are dealing with
+
+        if server.java_ip_address and server.bedrock_ip_address:
+            # we only need to poll java server
+            poll_java_server(server)
+        else:
+            if server.java_ip_address:
+                poll_java_server(server)
+
+            if server.bedrock_ip_address:
+                poll_bedrock_server(server)
+
+    db.end_session()
+
+
+async def _poll_servers_aynsc_batch(servers: List[Server]):
+    """Batches the polling of servers asyncronously"""
+    to_process: List[Server] = []
+
+    # for server in servers:
+    #     if len(to_process) <= ASYNC_POLL_BATCH_SIZE:
+    #         to_process.append(server)
+    #         continue
+
+    #     await asyncio.wait(
+    #         {
+    #             asyncio.create_task(poll_server_async(process_server))
+    #             for process_server in to_process
+    #         }
+    #     )
+    #     to_process = []
+    for i in range(0, len(servers), ASYNC_POLL_BATCH_SIZE):
+        await asyncio.wait(
+            {
+                asyncio.create_task(poll_server_async(process_server))
+                for process_server in servers[i : i + ASYNC_POLL_BATCH_SIZE]
+            }
+        )
+        print(f"Processed {i} servers")
+
+
+def poll_servers_async():
+    """Polls minecraft servers for information"""
+
+    logger.info("Polling servers")
+
+    # Renew the session
+    db.renew_session()
+
+    servers = []
+
+    # Get all servers
+    with _handle_db_errors():
+        servers = db.session.query(Server).all()
+
+    asyncio.run(_poll_servers_aynsc_batch(servers))
+
+    db.end_session()
