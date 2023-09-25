@@ -11,6 +11,7 @@ from starlette.requests import Request
 
 from msc import db, errorhandling
 from msc.config import config
+from msc.constants import ADMIN_USER_IDS
 
 from . import loggingutil
 from .api import migration_api, server_api, util_api, vote_api, user_api, auth_api
@@ -46,11 +47,13 @@ def init_middleware(app):
 
     @app.middleware("http")
     async def global_request_middleware(request: Request, call_next):
-
         request.state.authorised = False
 
         if config.development_mode and "msc-user-id" in request.headers:
             request.state.user_id = request.headers["msc-user-id"]
+            request.state.authorised = True
+            request.state.is_admin = True
+
         elif "Authorization" in request.headers:
             token = request.headers["Authorization"]
 
@@ -67,12 +70,17 @@ def init_middleware(app):
                 )
 
                 request.state.user_id = verified_claims["sub"]
+                request.state.authorised = True
+
+                if verified_claims["sub"] in ADMIN_USER_IDS:
+                    request.state.is_admin = True
+
             except Exception as e:
                 return JSONResponse(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     content={"message": "Not authorised"},
                 )
-        
+
         db.renew_session()
 
         logger.info("Request: %s", request)

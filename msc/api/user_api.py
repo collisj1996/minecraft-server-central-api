@@ -14,6 +14,8 @@ def add_user(
 ):
     """Endpoint for creating a user"""
 
+    # TODO: Add auth check
+
     user = user_service.add_user(
         user_id=body.user_id,
         username=body.username,

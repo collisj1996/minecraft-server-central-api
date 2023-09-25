@@ -13,11 +13,13 @@ from msc.dto.server_dto import (
     ServersMineOutputDto,
 )
 from msc.services import server_service
+from msc.utils.api_utils import auth_required
 
 router = APIRouter()
 
 
 @router.post("/servers")
+@auth_required
 def create_server(
     request: Request,
     body: ServerCreateInputDto,
@@ -25,9 +27,6 @@ def create_server(
     """Endpoint for creating a server"""
 
     user_id = request.state.user_id
-
-    # TODO: Add authentication here
-    # need to check if the user passed Auth
 
     server = server_service.create_server(
         name=body.name,
@@ -52,6 +51,7 @@ def create_server(
 
 
 @router.get("/servers/mine")
+@auth_required
 def get_my_servers(
     request: Request,
 ) -> ServersMineOutputDto:
@@ -98,6 +98,7 @@ def get_servers(
 
 
 @router.patch("/servers/{server_id}")
+@auth_required
 def update_server(
     request: Request,
     server_id: str,
@@ -106,8 +107,6 @@ def update_server(
     """Endpoint for updating a server"""
 
     user_id = request.state.user_id
-
-    # TODO: Add authentication here
 
     server = server_service.update_server(
         server_id=UUID(server_id),
@@ -133,6 +132,7 @@ def update_server(
 
 
 @router.delete("/servers/{server_id}")
+@auth_required
 def delete_server(
     request: Request,
     server_id: str,
@@ -140,8 +140,6 @@ def delete_server(
     """Endpoint for deleting a server"""
 
     user_id = request.state.user_id
-
-    # TODO: Add authentication here
 
     deleted_server_id = server_service.delete_server(
         server_id=UUID(server_id),
