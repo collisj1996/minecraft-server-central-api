@@ -10,11 +10,11 @@ from PIL import Image
 from sqlalchemy import and_, desc, func
 
 from msc.utils.file_utils import _get_checksum
-from msc import db
 from msc.dto.custom_types import NOT_SET
 from msc.models import Server, Vote, ServerGameplay
 from msc.errors import BadRequest
 from msc.services import ping_service
+from sqlalchemy.orm import Session
 
 
 @contextmanager
@@ -23,12 +23,12 @@ def _handle_db_errors():
     try:
         yield
     except Exception as e:
-        db.session.rollback()
         # TODO: Raise a custom exception here
         raise e
 
 
 def get_servers(
+    db: Session,
     page: int = 1,
     page_size: int = 10,
     filter: Optional[str] = None,
@@ -43,7 +43,7 @@ def get_servers(
     year = now.year
 
     subquery = (
-        db.session.query(
+        db.query(
             Vote.server_id,
             func.count(Vote.id).label("votes_this_month_sub"),
         )
@@ -59,7 +59,7 @@ def get_servers(
 
     # Get servers and vote count
     servers_query = (
-        db.session.query(
+        db.query(
             Server,
             func.count(Vote.id).label("total_votes"),
             func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
@@ -85,19 +85,22 @@ def get_servers(
     servers_result = servers_query.all()
 
     # get total number of servers
-    total_servers = db.session.query(func.count(Server.id)).scalar()
+    total_servers = db.query(func.count(Server.id)).scalar()
 
     return servers_result, total_servers
 
 
-def get_server(server_id: UUID) -> Server:
+def get_server(
+    db: Session,
+    server_id: UUID,
+) -> Server:
     # Get the current month and year
     now = datetime.now()
     month = now.month
     year = now.year
 
     subquery = (
-        db.session.query(
+        db.query(
             Vote.server_id,
             func.count(Vote.id).label("votes_this_month_sub"),
         )
@@ -113,7 +116,7 @@ def get_server(server_id: UUID) -> Server:
 
     # get server with votes
     server_and_votes = (
-        db.session.query(
+        db.query(
             Server,
             func.count(Vote.id).label("total_votes"),
             func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
@@ -137,7 +140,10 @@ def get_server(server_id: UUID) -> Server:
     return server_and_votes
 
 
-def get_my_servers(user_id: UUID):
+def get_my_servers(
+    db: Session,
+    user_id: UUID,
+):
     """Returns all servers owned by a user with vote count and no pagination"""
 
     # Get the current month and year
@@ -146,7 +152,7 @@ def get_my_servers(user_id: UUID):
     year = now.year
 
     subquery = (
-        db.session.query(
+        db.query(
             Vote.server_id,
             func.count(Vote.id).label("votes_this_month_sub"),
         )
@@ -162,7 +168,7 @@ def get_my_servers(user_id: UUID):
 
     # Get servers and vote count
     servers_query = (
-        db.session.query(
+        db.query(
             Server,
             func.count(Vote.id).label("total_votes"),
             func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
@@ -238,6 +244,7 @@ def _upload_banner(
 
 
 def update_server(
+    db: Session,
     server_id: UUID,
     user_id: UUID,
     name: Optional[str] = NOT_SET,
@@ -259,7 +266,7 @@ def update_server(
     """Updates a server"""
 
     server = (
-        db.session.query(Server)
+        db.query(Server)
         .filter(
             Server.id == server_id,
         )
@@ -326,8 +333,8 @@ def update_server(
 
     if gameplay != NOT_SET:
         # Delete all gameplay
-        db.session.query(ServerGameplay).filter(
-            ServerGameplay.server_id == server_id
+        db.query(ServerGameplay).filter(
+            ServerGameplay.server_id == server_id,
         ).delete()
 
         # Add new gameplay
@@ -337,21 +344,25 @@ def update_server(
                 name=gameplay_name,
             )
 
-            db.session.add(server_gameplay)
+            db.add(server_gameplay)
 
     # poll the server to check it is online and get extra data
     ping_service.poll_server(
+        db=db,
         server=server,
         commit=False,
     )
 
+    server.updated_at = datetime.now()
+
     with _handle_db_errors():
-        db.session.commit()
+        db.commit()
 
     return server
 
 
 def create_server(
+    db: Session,
     name: str,
     user_id: UUID,
     country_code: str,
@@ -371,13 +382,20 @@ def create_server(
 ):
     """Creates a server"""
 
-    user_servers = db.session.query(Server).filter(Server.user_id == user_id).all()
-
-    if len(user_servers) > 9:
-        raise BadRequest(
-            "You cannot create more than 10 servers",
-            user_id=user_id,
+    user_servers = (
+        db.query(Server)
+        .filter(
+            Server.user_id == user_id,
         )
+        .all()
+    )
+
+    # TODO: Add this back in after testing
+    # if len(user_servers) > 9:
+    #     raise BadRequest(
+    #         "You cannot create more than 10 servers",
+    #         user_id=user_id,
+    #     )
 
     server = Server(
         name=name,
@@ -396,13 +414,14 @@ def create_server(
         discord=discord,
     )
 
-    db.session.add(server)
+    db.add(server)
 
     with _handle_db_errors():
-        db.session.flush()
+        db.flush()
 
     # poll the server to check it is online and get extra data
     ping_service.poll_server(
+        db=db,
         server=server,
         commit=False,
     )
@@ -424,22 +443,23 @@ def create_server(
             name=gameplay_name,
         )
 
-        db.session.add(server_gameplay)
+        db.add(server_gameplay)
 
     with _handle_db_errors():
-        db.session.commit()
+        db.commit()
 
     return server
 
 
 def delete_server(
+    db: Session,
     user_id: UUID,
     server_id: UUID,
 ):
     """Deletes a server"""
 
     server = (
-        db.session.query(Server)
+        db.query(Server)
         .filter(
             Server.id == server_id,
         )
@@ -453,15 +473,13 @@ def delete_server(
         raise Exception("You do not own this server")
 
     # delete all votes
-    db.session.query(Vote).filter(Vote.server_id == server_id).delete()
+    db.query(Vote).filter(Vote.server_id == server_id).delete()
 
     # delete all gameplay
-    db.session.query(ServerGameplay).filter(
-        ServerGameplay.server_id == server_id
-    ).delete()
+    db.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
 
     with _handle_db_errors():
-        db.session.delete(server)
-        db.session.commit()
+        db.delete(server)
+        db.commit()
 
     return server_id

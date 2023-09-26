@@ -6,7 +6,9 @@ from sqlalchemy.orm import close_all_sessions, sessionmaker
 
 # This needs to be imported before anything in the msc package
 import tests.utils.database_config_override  # noqa
-from msc import db
+
+# from msc import db
+from msc.database import get_db, engine, SessionLocal
 from msc.app import create_app
 from msc.config import config
 from msc.database import Database
@@ -31,16 +33,13 @@ def pytest_configure(config):
     # Run the migrations
     run_migrations()
 
-    # Disable the sqlalchemy session
-    db.session = DisabledSession()
-
 
 @pytest.fixture(scope="session")
 def connection(request):
     """
     Use a single database connection for all tests.
     """
-    return db.engine.connect()
+    return engine.connect()
 
 
 @pytest.fixture
@@ -51,34 +50,20 @@ def session(connection, mocker):
     # Start a transaction
     transaction = connection.begin()
 
-    orig_Session = db.Session
-    orig_session = db.session
+    # Create a session
+    db = sessionmaker(bind=connection, autoflush=False, autocommit=False)()
 
-    db.Session = sessionmaker(
-        bind=connection,
-        autocommit=False,
-        autoflush=False,
-        join_transaction_mode="create_savepoint",
-    )
-    db.session = db.Session()
+    yield db
 
-    # Mock the renew_session function so that it doesnt get called
-    mocker.patch.object(Database, "renew_session")
+    # close the session
+    db.close()
 
-    # Mock the end_session function so that it doesnt get called
-    mocker.patch.object(Database, "end_session")
-
-    yield db.session
-
-    db.session.close()
-
+    # Rollback the transaction
     if transaction.is_active:
         transaction.rollback()
 
+    # Close all sessions
     close_all_sessions()
-
-    db.session = orig_session
-    db.Session = orig_Session
 
 
 @pytest.fixture(scope="session")

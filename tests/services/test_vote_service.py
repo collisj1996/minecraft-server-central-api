@@ -11,6 +11,7 @@ def test_add_vote(session, server_colcraft: Server):
     """Tests adding a vote"""
 
     vote = vote_service.add_vote(
+        db=session,
         server_id=server_colcraft.id,
         client_ip="127.0.0.1",
     )
@@ -25,6 +26,7 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
     visitor_ip = "127.0.0.1"
 
     vote = vote_service.add_vote(
+        db=session,
         server_id=server_colcraft.id,
         client_ip=visitor_ip,
     )
@@ -33,6 +35,7 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
 
     with pytest.raises(Exception) as e:
         vote_2 = vote_service.add_vote(
+            db=session,
             server_id=server_colcraft.id,
             client_ip=visitor_ip,
         )
@@ -43,6 +46,7 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
     with freezegun.freeze_time(datetime.utcnow() + timedelta(hours=23)):
         with pytest.raises(Exception) as e:
             vote_3 = vote_service.add_vote(
+                db=session,
                 server_id=server_colcraft.id,
                 client_ip=visitor_ip,
             )
@@ -55,6 +59,7 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
     # go forward 24 hours
     with freezegun.freeze_time(datetime.utcnow() + timedelta(hours=24)):
         vote_4 = vote_service.add_vote(
+            db=session,
             server_id=server_colcraft.id,
             client_ip=visitor_ip,
         )

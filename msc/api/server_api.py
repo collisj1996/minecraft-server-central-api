@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from fastapi.requests import Request
 from uuid import UUID
 
+from sqlalchemy.orm import Session
 from msc.dto.server_dto import (
     GetServerDto,
     ServerCreateInputDto,
@@ -15,6 +16,7 @@ from msc.dto.server_dto import (
 )
 from msc.services import server_service, ping_service
 from msc.utils.api_utils import auth_required
+from msc.database import get_db
 
 router = APIRouter()
 
@@ -24,12 +26,14 @@ router = APIRouter()
 def create_server(
     request: Request,
     body: ServerCreateInputDto,
+    db: Session = Depends(get_db),
 ) -> ServerDto:
     """Endpoint for creating a server"""
 
     user_id = request.state.user_id
 
     server = server_service.create_server(
+        db=db,
         name=body.name,
         user_id=user_id,
         description=body.description,
@@ -55,12 +59,16 @@ def create_server(
 @auth_required
 def get_my_servers(
     request: Request,
+    db: Session = Depends(get_db),
 ) -> ServersMineOutputDto:
     """Endpoint for getting all servers"""
 
     user_id = request.state.user_id
 
-    my_servers = server_service.get_my_servers(user_id)
+    my_servers = server_service.get_my_servers(
+        db=db,
+        user_id=user_id,
+    )
 
     dto = ServersMineOutputDto(
         __root__=[GetServerDto.from_service(s) for s in my_servers],
@@ -70,10 +78,16 @@ def get_my_servers(
 
 
 @router.get("/servers/{server_id}")
-def get_server(server_id: str) -> GetServerDto:
+def get_server(
+    server_id: str,
+    db: Session = Depends(get_db),
+) -> GetServerDto:
     """Endpoint for getting a server"""
 
-    server = server_service.get_server(server_id)
+    server = server_service.get_server(
+        db=db,
+        server_id=server_id,
+    )
 
     return GetServerDto.from_service(server)
 
@@ -81,10 +95,12 @@ def get_server(server_id: str) -> GetServerDto:
 @router.get("/servers")
 def get_servers(
     query_params: ServersGetInputDto = Depends(),
+    db: Session = Depends(get_db),
 ) -> ServersGetOutputDto:
     """Endpoint for getting all servers"""
 
     servers_resp, total_servers = server_service.get_servers(
+        db=db,
         page=query_params.page,
         page_size=query_params.page_size,
         filter=query_params.filter,
@@ -104,12 +120,14 @@ def update_server(
     request: Request,
     server_id: str,
     body: ServerUpdateInputDto,
+    db: Session = Depends(get_db),
 ) -> ServerDto:
     """Endpoint for updating a server"""
 
     user_id = request.state.user_id
 
     server = server_service.update_server(
+        db=db,
         server_id=UUID(server_id),
         name=body.name,
         user_id=UUID(user_id),
@@ -137,12 +155,14 @@ def update_server(
 def delete_server(
     request: Request,
     server_id: str,
+    db: Session = Depends(get_db),
 ) -> ServerDeleteOutputDto:
     """Endpoint for deleting a server"""
 
     user_id = request.state.user_id
 
     deleted_server_id = server_service.delete_server(
+        db=db,
         server_id=UUID(server_id),
         user_id=UUID(user_id),
     )
@@ -157,12 +177,14 @@ def delete_server(
 def ping_server(
     request: Request,
     server_id: str,
+    db: Session = Depends(get_db),
 ) -> ServerPingOutputDto:
     """Endpoint for pinging a server"""
 
     user_id = request.state.user_id
 
     response = ping_service.poll_server_by_id(
+        db=db,
         server_id=UUID(server_id),
         user_id=UUID(user_id),
     )

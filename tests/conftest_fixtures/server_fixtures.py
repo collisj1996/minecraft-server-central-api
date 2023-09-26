@@ -6,13 +6,14 @@ from msc.services import server_service, user_service
 
 
 @pytest.fixture
-def server_colcraft(user_jack: User):
+def server_colcraft(session, user_jack: User):
     """Returns a server with default values"""
 
     with open("tests/resources/test_image_base64_string.txt", "r") as f:
         image_base64_string = f.read()
 
     server = server_service.create_server(
+        db=session,
         name="My Server",
         user_id=user_jack.id,
         description="My Server Description",
@@ -33,13 +34,14 @@ def server_colcraft(user_jack: User):
 
 
 @pytest.fixture
-def server_hypixel(user_alan: User):
+def server_hypixel(session, user_alan: User):
     """Returns a server with default values"""
 
     with open("tests/resources/test_image_base64_string.txt", "r") as f:
         image_base64_string = f.read()
 
     server = server_service.create_server(
+        db=session,
         name="Hypixel",
         user_id=user_alan.id,
         description="Hypixel Description",
@@ -60,7 +62,7 @@ def server_hypixel(user_alan: User):
 
 
 @pytest.fixture
-def many_servers():
+def many_servers(session):
     """Returns a server with default values"""
 
     output = {
@@ -72,12 +74,14 @@ def many_servers():
 
     for i in range(1, 100):
         user = user_service.add_user(
+            db=session,
             user_id=uuid4(),
             username=f"User {i}",
             email=f"user{i}@gmail.com",
         )
 
         server = server_service.create_server(
+            db=session,
             name=f"Server {i}",
             user_id=user.id,
             description="My Server Description",

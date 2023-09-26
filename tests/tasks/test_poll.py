@@ -33,6 +33,7 @@ def test_poll_java_server_no_query(
 
     # create a new server with no polled stats
     server_colcraft = server_service.create_server(
+        db=session,
         name="ColCraft",
         user_id=user_jack.id,
         country_code="US",
@@ -89,7 +90,10 @@ def test_poll_java_server_no_query(
     )
 
     # poll server
-    poll_java_server(server=server_colcraft)
+    poll_java_server(
+        db=session,
+        server=server_colcraft,
+    )
 
     # confirm server has polled stats
     server: Server = (
@@ -115,6 +119,7 @@ def test_poll_java_server_with_query(
 
     # create a new server with no polled stats
     server_colcraft = server_service.create_server(
+        db=session,
         name="ColCraft",
         user_id=user_jack.id,
         country_code="US",
@@ -170,7 +175,10 @@ def test_poll_java_server_with_query(
     )
 
     # poll server
-    poll_java_server(server=server_colcraft)
+    poll_java_server(
+        db=session,
+        server=server_colcraft,
+    )
 
     # confirm server has polled stats (NO ICON CHECKSUM)
     server: Server = (
@@ -190,6 +198,7 @@ def test_poll_java_server_with_query(
 def test_poll_bedrock_server(session, user_jack: User, mocker):
     # create a new server with no polled stats
     server_colcraft = server_service.create_server(
+        db=session,
         name="ColCraft",
         user_id=user_jack.id,
         country_code="US",
@@ -236,7 +245,10 @@ def test_poll_bedrock_server(session, user_jack: User, mocker):
     )
 
     # poll server
-    poll_bedrock_server(server=server_colcraft)
+    poll_bedrock_server(
+        db=session,
+        server=server_colcraft,
+    )
 
     # confirm server has polled stats
     server: Server = (
@@ -256,6 +268,7 @@ def test_poll_bedrock_server(session, user_jack: User, mocker):
 def test_poll_java_server_go_offline(session, user_jack: User, mocker):
     # create a new server with no polled stats
     server_colcraft = server_service.create_server(
+        db=session,
         name="ColCraft",
         user_id=user_jack.id,
         country_code="US",
@@ -286,7 +299,10 @@ def test_poll_java_server_go_offline(session, user_jack: User, mocker):
     )
 
     # poll server
-    poll_java_server(server=server_colcraft)
+    poll_java_server(
+        db=session,
+        server=server_colcraft,
+    )
 
     # confirm server has offline stats
     server: Server = (
@@ -305,6 +321,7 @@ def test_poll_java_server_go_offline(session, user_jack: User, mocker):
 def test_bedrock_server_go_offline(session, user_jack: User, mocker):
     # create a new server with no polled stats
     server_colcraft = server_service.create_server(
+        db=session,
         name="ColCraft",
         user_id=user_jack.id,
         country_code="US",
@@ -329,7 +346,10 @@ def test_bedrock_server_go_offline(session, user_jack: User, mocker):
     )
 
     # poll server
-    poll_bedrock_server(server=server_colcraft)
+    poll_bedrock_server(
+        db=session,
+        server=server_colcraft,
+    )
 
     # confirm server has offline stats
     server: Server = (
@@ -348,6 +368,7 @@ def test_bedrock_server_go_offline(session, user_jack: User, mocker):
 def test_poll_java_server_invalid_ip(session, user_jack: User, mocker):
     # create a new server with no polled stats
     server_colcraft = server_service.create_server(
+        db=session,
         name="ColCraft",
         user_id=user_jack.id,
         country_code="US",
@@ -374,7 +395,7 @@ def test_poll_java_server_invalid_ip(session, user_jack: User, mocker):
         side_effect=gaierror,
     )
 
-    poll_java_server(server=server_colcraft)
+    poll_java_server(db=session, server=server_colcraft)
 
     # confirm server has offline stats
     server: Server = (
@@ -393,6 +414,7 @@ def test_poll_java_server_invalid_ip(session, user_jack: User, mocker):
 def test_poll_bedrock_server_invalid_ip(session, user_jack: User, mocker):
     # create a new server with no polled stats
     server_colcraft = server_service.create_server(
+        db=session,
         name="ColCraft",
         user_id=user_jack.id,
         country_code="US",
@@ -413,7 +435,7 @@ def test_poll_bedrock_server_invalid_ip(session, user_jack: User, mocker):
         side_effect=gaierror,
     )
 
-    poll_bedrock_server(server=server_colcraft)
+    poll_bedrock_server(db=session, server=server_colcraft)
 
     # confirm server has offline stats
     server: Server = (
@@ -482,7 +504,10 @@ async def test_poll_servers_async(
         return_value=mocked_status_response,
     )
 
-    await _poll_servers_aynsc_batch(servers=many_servers["servers_list"])
+    await _poll_servers_aynsc_batch(
+        db=session,
+        servers=many_servers["servers_list"],
+    )
 
     # get the servers again
     servers = session.query(Server).all()

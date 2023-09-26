@@ -8,6 +8,8 @@ from msc.dto.vote_dto import (
     CheckVoteOutputDto,
 )
 from msc.services import vote_service
+from msc.database import get_db
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -41,6 +43,7 @@ def _get_client_ip(request):
 def add_vote(
     request: Request,
     body: CreateVoteInputDto,
+    db: Session = Depends(get_db),
 ) -> str:
     """Endpoint for adding a voter"""
 
@@ -49,6 +52,7 @@ def add_vote(
     # TODO: Add error handling for no client IP
 
     vote_service.add_vote(
+        db=db,
         server_id=body.server_id,
         client_ip=client_ip,
     )
@@ -60,6 +64,7 @@ def add_vote(
 def check_vote_info(
     request: Request,
     query_params: CheckVoteInputDto = Depends(),
+    db: Session = Depends(get_db),
 ) -> CheckVoteOutputDto:
     """Endpoint for checking if a voter has voted for a server in the last 24 hours"""
 
@@ -68,6 +73,7 @@ def check_vote_info(
     # TODO: Add error handling for no client IP
 
     response = vote_service.check_vote_info(
+        db=db,
         server_id=query_params.server_id,
         client_ip=client_ip,
     )

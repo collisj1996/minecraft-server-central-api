@@ -15,8 +15,28 @@ def get_url():
     return f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_database}"
 
 
+engine = create_engine(get_url())
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    except Exception as e:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
 class Database:
     def __init__(self):
+        # TODO: Remove this
+
         # Engine - connection to the database
         # NullPool ensures that connections are closed after use
         self.engine = create_engine(get_url(), poolclass=NullPool)

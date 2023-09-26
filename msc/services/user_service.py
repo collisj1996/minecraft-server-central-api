@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from uuid import UUID
 
-from msc import db
+from sqlalchemy.orm import Session
 from msc.models import User
 
 
@@ -11,12 +11,16 @@ def _handle_db_errors():
     try:
         yield
     except Exception as e:
-        db.session.rollback()
         # TODO: Raise a custom exception here
         raise e
 
 
-def add_user(user_id: UUID, username: str, email: str):
+def add_user(
+    db: Session,
+    user_id: UUID,
+    username: str,
+    email: str,
+):
     """Adds a user to the database"""
 
     user = User(
@@ -25,9 +29,9 @@ def add_user(user_id: UUID, username: str, email: str):
         email=email,
     )
 
-    db.session.add(user)
+    db.add(user)
 
     with _handle_db_errors():
-        db.session.commit()
+        db.commit()
 
     return user
