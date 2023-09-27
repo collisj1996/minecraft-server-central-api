@@ -262,6 +262,9 @@ def update_server(
     website: Optional[str] = NOT_SET,
     discord: Optional[str] = NOT_SET,
     gameplay: Optional[List[str]] = NOT_SET,
+    video_url: Optional[str] = NOT_SET,
+    web_store: Optional[str] = NOT_SET,
+    owner_name: Optional[str] = NOT_SET,
 ) -> Server:
     """Updates a server"""
 
@@ -284,19 +287,14 @@ def update_server(
 
     if java_ip_address != NOT_SET:
         server.java_ip_address = java_ip_address
-
     if bedrock_ip_address != NOT_SET:
         server.bedrock_ip_address = bedrock_ip_address
-
     if java_port != NOT_SET:
         server.java_port = java_port
-
     if bedrock_port != NOT_SET:
         server.bedrock_port = bedrock_port
-
     if country_code != NOT_SET:
         server.country_code = country_code
-
     if minecraft_version != NOT_SET:
         server.minecraft_version = minecraft_version
 
@@ -315,21 +313,22 @@ def update_server(
 
     if description != NOT_SET:
         server.description = description
-
     if votifier_ip_address != NOT_SET:
         server.votifier_ip_address = votifier_ip_address
-
     if votifier_port != NOT_SET:
         server.votifier_port = votifier_port
-
     if votifier_key != NOT_SET:
         server.votifier_key = votifier_key
-
     if website != NOT_SET:
         server.website = website
-
     if discord != NOT_SET:
         server.discord = discord
+    if video_url != NOT_SET:
+        server.video_url = video_url
+    if web_store != NOT_SET:
+        server.web_store = web_store
+    if owner_name != NOT_SET:
+        server.owner_name = owner_name
 
     if gameplay != NOT_SET:
         # Delete all gameplay
@@ -379,6 +378,9 @@ def create_server(
     votifier_key: Optional[str] = None,
     website: Optional[str] = None,
     discord: Optional[str] = None,
+    video_url: Optional[str] = None,
+    web_store: Optional[str] = None,
+    owner_name: Optional[str] = None,
 ):
     """Creates a server"""
 
@@ -412,6 +414,9 @@ def create_server(
         votifier_key=votifier_key,
         website=website,
         discord=discord,
+        video_url=video_url,
+        web_store=web_store,
+        owner_name=owner_name,
     )
 
     db.add(server)
@@ -472,13 +477,11 @@ def delete_server(
     if server.user_id != user_id:
         raise Exception("You do not own this server")
 
-    # delete all votes
-    db.query(Vote).filter(Vote.server_id == server_id).delete()
-
-    # delete all gameplay
-    db.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
-
     with _handle_db_errors():
+        # delete all votes
+        db.query(Vote).filter(Vote.server_id == server_id).delete()
+        # delete all gameplay
+        db.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
         db.delete(server)
         db.commit()
 

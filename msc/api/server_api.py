@@ -50,6 +50,9 @@ def create_server(
         discord=body.discord,
         banner_base64=body.banner_base64,
         gameplay=body.gameplay,
+        video_url=body.video_url,
+        web_store=body.web_store,
+        owner_name=body.owner_name,
     )
 
     return ServerDto.from_service(server)
@@ -145,6 +148,9 @@ def update_server(
         discord=body.discord,
         banner_base64=body.banner_base64,
         gameplay=body.gameplay,
+        video_url=body.video_url,
+        web_store=body.web_store,
+        owner_name=body.owner_name,
     )
 
     return ServerDto.from_service(server)

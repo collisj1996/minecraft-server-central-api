@@ -28,7 +28,7 @@ class Server(db.Base):
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid4)
     user_id = Column(UUID(as_uuid=True), nullable=False)
     name = Column(Text, nullable=False)
-    description = Column(Text, nullable=True)
+    description = Column(Text, nullable=False)
     java_ip_address = Column(Text, nullable=True)
     java_port = Column(Integer, nullable=True)
     bedrock_ip_address = Column(Text, nullable=True)
@@ -43,12 +43,15 @@ class Server(db.Base):
     votifier_key = Column(Text, nullable=True)
     website = Column(Text, nullable=True)
     discord = Column(Text, nullable=True)
+    video_url = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
     banner_checksum = Column(Text, nullable=True)
     banner_filetype = Column(Text, nullable=True)
     icon_checksum = Column(Text, nullable=True)
     last_pinged_at = Column(DateTime, nullable=True)
+    owner_name = Column(Text, nullable=True)
+    web_store = Column(Text, nullable=True)
 
     gameplay = relationship("ServerGameplay", backref="server")
 
@@ -87,6 +90,9 @@ class Server(db.Base):
         discord: Optional[str] = None,
         banner_checksum: Optional[str] = None,
         banner_filetype: Optional[str] = None,
+        video_url: Optional[str] = None,
+        owner_name: Optional[str] = None,
+        web_store: Optional[str] = None,
     ):
         self.name = name
         self.user_id = user_id
@@ -106,6 +112,9 @@ class Server(db.Base):
         self.max_players = 0
         self.banner_checksum = banner_checksum
         self.banner_filetype = banner_filetype
+        self.video_url = video_url
+        self.owner_name = owner_name
+        self.web_store = web_store
 
         current_datetime = datetime.utcnow()
         self.created_at = current_datetime

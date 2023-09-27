@@ -44,12 +44,15 @@ class ServerDto(BaseDto):
     votifier_key: Optional[str]
     website: Optional[str]
     discord: Optional[str]
+    video_url: Optional[str]
+    web_store: Optional[str]
     banner_url: Optional[str]
     icon_url: Optional[str]
     gameplay: List[str]
     created_at: DateTimeUTC
     updated_at: DateTimeUTC
     last_pinged_at: Optional[DateTimeUTC]
+    owner_name: Optional[str]
 
     @classmethod
     def from_service(cls, server: Server):
@@ -77,6 +80,9 @@ class ServerDto(BaseDto):
             created_at=server.created_at,
             updated_at=server.updated_at,
             last_pinged_at=server.last_pinged_at,
+            owner_name=server.owner_name,
+            web_store=server.web_store,
+            video_url=server.video_url,
         )
 
 
@@ -120,6 +126,9 @@ class GetServerDto(ServerDto):
             rank=service_output[3],
             total_votes=service_output[1],
             votes_this_month=service_output[2],
+            owner_name=service_output[0].owner_name,
+            web_store=service_output[0].web_store,
+            video_url=service_output[0].video_url,
         )
 
 
@@ -148,6 +157,9 @@ class ServerCreateInputDto(BaseDto):
     discord: Optional[str] = None
     banner_base64: Optional[str] = None
     gameplay: conlist(str, min_items=3, max_items=10)
+    owner_name: Optional[str] = None
+    video_url: Optional[str] = None
+    web_store: Optional[str] = None
 
     @validator("bedrock_ip_address")
     def validate_ip_addresses(cls, ip_address, values):
@@ -185,6 +197,9 @@ class ServerUpdateInputDto(BaseDto):
     discord: Optional[str] = NOT_SET
     banner_base64: Optional[str] = NOT_SET
     gameplay: Optional[conlist(str, min_items=3, max_items=10)] = NOT_SET
+    owner_name: Optional[str] = NOT_SET
+    video_url: Optional[str] = NOT_SET
+    web_store: Optional[str] = NOT_SET
 
     @validator("bedrock_ip_address")
     def validate_ip_addresses(cls, ip_address, values):
