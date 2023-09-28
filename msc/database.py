@@ -20,6 +20,7 @@ engine = create_engine(get_url())
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+Base.metadata.bind = engine
 
 
 def get_db():

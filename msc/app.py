@@ -14,7 +14,15 @@ from msc.config import config
 from msc.constants import ADMIN_USER_IDS
 
 from . import loggingutil
-from .api import migration_api, server_api, util_api, vote_api, user_api, auth_api
+from .api import (
+    migration_api,
+    server_api,
+    util_api,
+    vote_api,
+    user_api,
+    auth_api,
+    auction_api,
+)
 from .jobs.jobs import scheduler
 
 logger = logging.getLogger(__name__)
@@ -135,3 +143,4 @@ def register_routers(app):
     app.include_router(vote_api.router, tags=["vote"])
     app.include_router(user_api.router, tags=["user"])
     app.include_router(auth_api.router, tags=["auth"])
+    app.include_router(auction_api.router, tags=["auction"])

@@ -17,6 +17,7 @@ from msc.utils.db_utils import validate_database
 from tests.conftest_fixtures.server_fixtures import *
 from tests.conftest_fixtures.user_fixtures import *
 from tests.conftest_fixtures.vote_fixtures import *
+from tests.conftest_fixtures.auction_fixtures import *
 from tests.conftest_mocks.server_mocks import *
 from tests.conftest_mocks.job_mocks import *
 from tests.conftest_mocks.ping_mocks import *
