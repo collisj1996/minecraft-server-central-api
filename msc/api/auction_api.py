@@ -22,7 +22,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/auction")
+@router.post("/auctions")
 @admin_required
 def create_auction(
     request: Request,
@@ -33,18 +33,47 @@ def create_auction(
 
     auction = auction_service.create_auction(
         db=db,
-        bidding_starts_at=body.bidding_starts_at,
-        bidding_ends_at=body.bidding_ends_at,
-        payment_starts_at=body.payment_starts_at,
-        payment_ends_at=body.payment_ends_at,
-        sponsored_starts_at=body.sponsored_starts_at,
-        sponsored_ends_at=body.sponsored_ends_at,
+        sponsored_year=body.sponsored_year,
+        sponsored_month=body.sponsored_month,
+        is_current_auction=body.is_current_auction,
     )
 
     return AuctionDto.from_service(auction)
 
 
-@router.get("/auction/{auction_id}")
+@router.get("/auctions/current")
+@auth_required
+def get_current_auction(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> AuctionGetOutputDto:
+    """Endpoint for getting the current auction"""
+
+    auction_info = auction_service.get_current_auction(
+        db=db,
+    )
+
+    return AuctionGetOutputDto.from_service(auction_info)
+
+
+@router.patch("/auctions/{auction_id}/current")
+@admin_required
+def change_current_auction(
+    request: Request,
+    auction_id: str,
+    db: Session = Depends(get_db),
+) -> AuctionGetOutputDto:
+    """Endpoint for changing the current auction"""
+
+    auction_info = auction_service.change_current_auction(
+        db=db,
+        auction_id=UUID(auction_id),
+    )
+
+    return AuctionGetOutputDto.from_service(auction_info)
+
+
+@router.get("/auctions/{auction_id}")
 @auth_required
 def get_auction(
     request: Request,
@@ -67,17 +96,20 @@ def get_auctions(
     request: Request,
     query_params: AuctionsGetInputDto = Depends(),
     db: Session = Depends(get_db),
-) -> list[AuctionDto]:
+) -> list[AuctionGetOutputDto]:
     """Endpoint for getting auctions"""
 
     auctions = auction_service.get_auctions(
         db=db,
+        include_current_auction=query_params.include_current,
+        page=query_params.page,
+        per_page=query_params.page_size,
     )
 
-    return [AuctionDto.from_service(auction) for auction in auctions]
+    return [AuctionGetOutputDto.from_service(auction) for auction in auctions]
 
 
-@router.post("/auction/{auction_id}/bid")
+@router.post("/auctions/{auction_id}/bid")
 @auth_required
 def create_bid(
     request: Request,
@@ -85,14 +117,30 @@ def create_bid(
     body: AuctionBidCreateInputDto,
     db: Session = Depends(get_db),
 ) -> AuctionBidDto:
-    """Endpoint for adding a voter"""
+    """Endpoint for adding a bid to an auction"""
+
+    user_id = request.state.user_id
 
     auction_bid = auction_service.add_auction_bid(
         db=db,
         auction_id=auction_id,
-        user_id=request.state.user_id,
+        user_id=UUID(user_id),
         server_id=body.server_id,
         amount=body.amount,
     )
 
     return AuctionBidDto.from_service(auction_bid)
+
+
+@router.get("/auctions/{auction_id}/bids")
+@auth_required
+def get_bids(
+    request: Request,
+    auction_id: str,
+    db: Session = Depends(get_db),
+) -> list[AuctionBidDto]:
+    """Endpoint for getting all bids for an auction"""
+
+    # TODO
+
+    return []

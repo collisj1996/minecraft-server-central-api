@@ -22,3 +22,15 @@ class DateTimeUTC(datetime):
             return value.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         else:
             return value
+
+
+class DateTimeIsoStr(datetime):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value):
+        if isinstance(value, str):
+            return datetime.fromisoformat(value)
+        return value

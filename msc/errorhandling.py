@@ -107,7 +107,7 @@ def init_error_handlers(app):
             content=ErrorOutputDto(
                 type="error_building_response",
                 message=str(exception),
-                data={"errors": exception.errors()},
+                data={"errors": exception},
             ).dict(),
             status_code=500,
         )

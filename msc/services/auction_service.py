@@ -3,8 +3,9 @@ from datetime import datetime
 from uuid import UUID
 from dataclasses import dataclass
 
+from collections import defaultdict
 from msc.models import Auction, AuctionBid, Server, User
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 from msc.errors import NotFound, BadRequest, Unauthorized
 from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT
@@ -16,6 +17,10 @@ class InvalidBidAmount(BadRequest):
 
 class InvalidBid(BadRequest):
     """Raised when the bid is invalid"""
+
+
+class OnlyOneCurrentAuctionBadRequest(BadRequest):
+    """Raised when there is already a current auction"""
 
 
 @dataclass
@@ -30,32 +35,30 @@ def _handle_db_errors():
     try:
         yield
     except Exception as e:
-        # TODO: Raise a custom exception here
+        if e.orig.diag.constraint_name == "idx_current_auction":
+            raise OnlyOneCurrentAuctionBadRequest(
+                "There can only be one current auction"
+            )
+
         raise e
 
 
 def create_auction(
     db: Session,
-    bidding_starts_at: datetime,
-    bidding_ends_at: datetime,
-    payment_starts_at: datetime,
-    payment_ends_at: datetime,
-    sponsored_starts_at: datetime,
-    sponsored_ends_at: datetime,
+    sponsored_year: int,
+    sponsored_month: int,
     minimum_bid: int = MINIMUM_BID_DEFAULT,
     sponsored_slots_default: int = SPONSORED_SLOTS_DEFAULT,
+    is_current_auction: bool = False,
 ):
     """Adds an auction to the database"""
 
     auction = Auction(
-        bidding_starts_at=bidding_starts_at,
-        bidding_ends_at=bidding_ends_at,
-        payment_starts_at=payment_starts_at,
-        payment_ends_at=payment_ends_at,
-        sponsored_starts_at=sponsored_starts_at,
-        sponsored_ends_at=sponsored_ends_at,
+        sponsored_year=sponsored_year,
+        sponsored_month=sponsored_month,
         minimum_bid=minimum_bid,
         sponsored_slots=sponsored_slots_default,
+        is_current_auction=is_current_auction,
     )
 
     with _handle_db_errors():
@@ -93,10 +96,15 @@ def add_auction_bid(
     if server.user_id != user_id:
         raise Unauthorized("You are not authorized to bid on this server")
 
-    if datetime.now() < auction.bidding_starts_at:
+    if not auction.is_current_auction:
+        raise InvalidBid("This auction is not the currently active auction")
+
+    now = datetime.now()
+
+    if now < auction.bidding_starts_at:
         raise InvalidBid("Bidding has not started yet")
 
-    if datetime.now() > auction.bidding_ends_at:
+    if now > auction.bidding_ends_at:
         raise InvalidBid("Bidding has ended")
 
     user_max_bid = (
@@ -130,8 +138,26 @@ def add_auction_bid(
     return auction_bid
 
 
-def get_auction(db: Session, auction_id: UUID):
-    """Gets an auction from the database and the associated bids"""
+def get_current_auction(db: Session) -> GetAuctionInfo:
+    """Gets the current auction from the database"""
+
+    auction = (
+        db.query(Auction)
+        .filter(Auction.is_current_auction == True)
+        .order_by(Auction.created_at.desc())
+        .first()
+    )
+
+    if auction is None:
+        raise NotFound("There is no current auction")
+
+    auction_info = _get_auction(db=db, auction_id=auction.id)
+
+    return auction_info
+
+
+def _get_auction(db: Session, auction_id: UUID) -> GetAuctionInfo:
+    """Gets an auction from the database"""
 
     auction = db.query(Auction).filter(Auction.id == auction_id).one_or_none()
 
@@ -159,15 +185,151 @@ def get_auction(db: Session, auction_id: UUID):
             ),
         )
         .filter(AuctionBid.auction_id == auction_id)
+        .order_by(subquery.c.max_bid.desc())
+        .limit(auction.sponsored_slots)
         .all()
     )
 
     return GetAuctionInfo(auction=auction, bids=bids)
 
 
-def get_auctions(db: Session):
-    """Gets all auctions from the database"""
+def get_auction(db: Session, auction_id: UUID) -> GetAuctionInfo:
+    """Gets an auction from the database and the associated bids"""
 
-    # TODO: implement this
+    return _get_auction(db=db, auction_id=auction_id)
 
-    return []
+
+def get_auctions(
+    db: Session,
+    page: int = 1,
+    per_page: int = 10,
+    include_current_auction: bool = False,
+) -> list[GetAuctionInfo]:
+    """Gets all auctions from the database and the associated bids"""
+
+    auctions = (
+        db.query(Auction)
+        .filter(
+            or_(
+                Auction.is_current_auction == False,
+                Auction.is_current_auction == include_current_auction,
+            )
+        )
+        .order_by(Auction.sponsored_ends_at.desc())
+        .limit(per_page)
+        .offset((page - 1) * per_page)
+        .all()
+    )
+
+    auction_ids = [auction.id for auction in auctions]
+
+    subquery = (
+        db.query(
+            AuctionBid.auction_id,
+            AuctionBid.server_id,
+            func.max(AuctionBid.amount).label("max_bid"),
+        )
+        .filter(AuctionBid.auction_id.in_(auction_ids))
+        .group_by(
+            AuctionBid.auction_id,
+            AuctionBid.server_id,
+        )
+        .subquery()
+    )
+
+    bids = (
+        db.query(AuctionBid)
+        .join(
+            subquery,
+            and_(
+                AuctionBid.auction_id == subquery.c.auction_id,
+                AuctionBid.amount == subquery.c.max_bid,
+            ),
+        )
+        .filter(AuctionBid.auction_id.in_(auction_ids))
+        .order_by(subquery.c.max_bid.desc())
+        .all()
+    )
+
+    auction_bids = defaultdict(list)
+
+    for bid in bids:
+        auction_bids[bid.auction_id].append(bid)
+
+    auction_infos = []
+
+    for auction in auctions:
+        auction_infos.append(
+            GetAuctionInfo(
+                auction=auction,
+                bids=auction_bids[auction.id],
+            )
+        )
+
+    return auction_infos
+
+
+def unset_current_auction(db: Session) -> GetAuctionInfo:
+    """Unsets the current auction"""
+
+    current_auction = (
+        db.query(Auction)
+        .filter(Auction.is_current_auction == True)
+        .order_by(Auction.created_at.desc())
+        .first()
+    )
+
+    if current_auction is None:
+        raise NotFound("There is no current auction")
+
+    current_auction.is_current_auction = False
+
+    with _handle_db_errors():
+        db.commit()
+
+    auction_info = _get_auction(db=db, auction_id=current_auction.id)
+
+    return auction_info
+
+
+def change_current_auction(
+    db: Session,
+    auction_id: UUID,
+) -> GetAuctionInfo:
+    """Changes the current auction"""
+
+    auction = (
+        db.query(Auction)
+        .filter(
+            Auction.id == auction_id,
+        )
+        .one_or_none()
+    )
+
+    if auction is None:
+        raise NotFound("Auction not found")
+
+    current_auction = (
+        db.query(Auction)
+        .filter(Auction.is_current_auction == True)
+        .order_by(Auction.created_at.desc())
+        .first()
+    )
+
+    if current_auction is not None:
+        if current_auction.id == auction.id:
+            raise BadRequest("This auction is already the current auction")
+
+        current_auction.is_current_auction = False
+
+        with _handle_db_errors():
+            db.flush()
+
+    auction.is_current_auction = True
+
+    with _handle_db_errors():
+        db.commit()
+
+    auction_info = _get_auction(db=db, auction_id=auction.id)
+
+    return auction_info

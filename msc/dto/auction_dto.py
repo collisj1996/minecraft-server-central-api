@@ -1,14 +1,22 @@
 from uuid import UUID
 from typing import Optional
+from pydantic import conint
 
 from msc.models import Auction, AuctionBid
 from msc.dto.base import BaseDto
-from msc.dto.custom_types import DateTimeUTC
+from msc.dto.custom_types import DateTimeUTC, DateTimeIsoStr
 from msc.services.auction_service import GetAuctionInfo
+from msc.constants import (
+    MAX_AUCTIONS_PAGE_SIZE,
+    DEFAULT_AUCTION_PAGE,
+    DEFAULT_AUCTION_PAGE_SIZE,
+)
 
 
 class AuctionDto(BaseDto):
     id: UUID
+    sponsored_year: int
+    sponsored_month: int
     bidding_starts_at: DateTimeUTC
     bidding_ends_at: DateTimeUTC
     payment_starts_at: DateTimeUTC
@@ -22,6 +30,8 @@ class AuctionDto(BaseDto):
     def from_service(cls, auction: Auction):
         return cls(
             id=auction.id,
+            sponsored_year=auction.sponsored_year,
+            sponsored_month=auction.sponsored_month,
             bidding_starts_at=auction.bidding_starts_at,
             bidding_ends_at=auction.bidding_ends_at,
             payment_starts_at=auction.payment_starts_at,
@@ -70,24 +80,21 @@ class AuctionGetOutputDto(BaseDto):
 
 
 class AuctionsGetInputDto(BaseDto):
-    pass
-    # TODO: Add pagination
+    include_current: Optional[bool] = False
+    page: Optional[int] = DEFAULT_AUCTION_PAGE
+    page_size: Optional[
+        conint(ge=5, le=MAX_AUCTIONS_PAGE_SIZE)
+    ] = DEFAULT_AUCTION_PAGE_SIZE
 
 
 class AuctionCreateInputDto(BaseDto):
-    bidding_starts_at: DateTimeUTC
-    bidding_ends_at: DateTimeUTC
-    payment_starts_at: DateTimeUTC
-    payment_ends_at: DateTimeUTC
-    sponsored_starts_at: DateTimeUTC
-    sponsored_ends_at: DateTimeUTC
+    sponsored_year: int
+    sponsored_month: int
     minimum_bid: Optional[int]
     sponsored_slots: Optional[int]
+    is_current_auction: Optional[bool] = False
 
 
 class AuctionBidCreateInputDto(BaseDto):
-    auction_id: UUID
-    user_id: UUID
     server_id: UUID
-    server_name: str
     amount: int
