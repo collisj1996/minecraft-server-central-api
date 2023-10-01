@@ -1,18 +1,11 @@
-from datetime import datetime, timezone, timedelta
-from uuid import uuid4, UUID
 import calendar
+from datetime import datetime, timedelta, timezone
+from uuid import UUID, uuid4
 
-from sqlalchemy import (
-    Column,
-    DateTime,
-    Integer,
-    UniqueConstraint,
-    CheckConstraint,
-    Boolean,
-    Index,
-)
-from sqlalchemy.orm import relationship
+from sqlalchemy import (Boolean, CheckConstraint, Column, DateTime, Index,
+                        Integer, UniqueConstraint)
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 from msc import db
 

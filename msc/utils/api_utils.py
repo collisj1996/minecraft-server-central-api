@@ -1,7 +1,8 @@
 from functools import wraps
-from fastapi import Request, HTTPException
 
-from msc.errors import Unauthorized, InternalError
+from fastapi import HTTPException, Request
+
+from msc.errors import InternalError, Unauthorized
 
 
 def auth_required(func):

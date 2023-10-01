@@ -1,6 +1,6 @@
 """Defines custom errors for the msc package."""
-from uuid import UUID
 import re
+from uuid import UUID
 
 from msc.dto.util import ErrorOutputDto
 

@@ -1,15 +1,13 @@
-from fastapi import APIRouter, Depends
-from fastapi.requests import Request
 import logging
 
-from msc.dto.vote_dto import (
-    CreateVoteInputDto,
-    CheckVoteInputDto,
-    CheckVoteOutputDto,
-)
-from msc.services import vote_service
-from msc.database import get_db
+from fastapi import APIRouter, Depends
+from fastapi.requests import Request
 from sqlalchemy.orm import Session
+
+from msc.database import get_db
+from msc.dto.vote_dto import (CheckVoteInputDto, CheckVoteOutputDto,
+                              CreateVoteInputDto)
+from msc.services import vote_service
 
 router = APIRouter()
 

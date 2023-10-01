@@ -1,14 +1,8 @@
 from datetime import datetime
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
-from sqlalchemy import (
-    Column,
-    DateTime,
-    ForeignKeyConstraint,
-    Integer,
-    UniqueConstraint,
-    CheckConstraint,
-)
+from sqlalchemy import (CheckConstraint, Column, DateTime,
+                        ForeignKeyConstraint, Integer, UniqueConstraint)
 from sqlalchemy.dialects.postgresql import UUID
 
 from msc import db

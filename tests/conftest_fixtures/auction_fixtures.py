@@ -1,8 +1,9 @@
-import pytest
 from datetime import datetime, timedelta
-from msc.models import Auction, Server
-import freezegun
 
+import freezegun
+import pytest
+
+from msc.models import Auction, Server
 from msc.services import auction_service
 
 

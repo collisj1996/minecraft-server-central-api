@@ -2,8 +2,8 @@
 Contains code to create the FastAPI application and initialise the web server
 """
 import logging
-import cognitojwt
 
+import cognitojwt
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -14,15 +14,8 @@ from msc.config import config
 from msc.constants import ADMIN_USER_IDS
 
 from . import loggingutil
-from .api import (
-    migration_api,
-    server_api,
-    util_api,
-    vote_api,
-    user_api,
-    auth_api,
-    auction_api,
-)
+from .api import (auction_api, auth_api, migration_api, server_api, user_api,
+                  util_api, vote_api)
 from .jobs.jobs import scheduler
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
-from msc.models import User, Server
+
 from msc.database import get_db
+from msc.models import Server, User
 
 from .utils import get_auth_header, get_response_body
 

@@ -3,8 +3,9 @@ from datetime import datetime, timedelta
 import freezegun
 import pytest
 
+from msc.errors import NotFound
 from msc.models import Server, Vote
-from msc.services import vote_service
+from msc.services import server_service, vote_service
 
 
 def test_add_vote(session, server_colcraft: Server):
@@ -65,3 +66,26 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
         )
 
     assert session.query(Vote).count() == 2
+
+
+def test_vote_for_server_flagged_for_deletion(session, server_colcraft: Server):
+    """Tests adding a vote for a server flagged for deletion"""
+
+    server_service.delete_server(
+        db=session,
+        user_id=server_colcraft.user_id,
+        server_id=server_colcraft.id,
+    )
+
+    server_colcraft = (
+        session.query(Server).filter(Server.id == server_colcraft.id).one_or_none()
+    )
+
+    assert server_colcraft.flagged_for_deletion
+
+    with pytest.raises(NotFound):
+        vote = vote_service.add_vote(
+            db=session,
+            server_id=server_colcraft.id,
+            client_ip="1.1.1.1",
+        )

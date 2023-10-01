@@ -2,19 +2,19 @@ import base64
 from contextlib import contextmanager
 from datetime import datetime
 from io import BytesIO
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
 
 import boto3
 from PIL import Image
 from sqlalchemy import and_, desc, func
-
-from msc.utils.file_utils import _get_checksum
-from msc.dto.custom_types import NOT_SET
-from msc.models import Server, Vote, ServerGameplay
-from msc.errors import BadRequest
-from msc.services import ping_service
 from sqlalchemy.orm import Session
+
+from msc.dto.custom_types import NOT_SET
+from msc.errors import BadRequest, NotFound
+from msc.models import Server, ServerGameplay, Vote
+from msc.services import ping_service
+from msc.utils.file_utils import _get_checksum
 
 
 @contextmanager
@@ -72,6 +72,7 @@ def get_servers(
         )
         .outerjoin(Vote, Server.id == Vote.server_id)
         .outerjoin(subquery, Server.id == subquery.c.server_id)
+        .filter(Server.flagged_for_deletion == False)
         .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
         .order_by(
             desc("votes_this_month"),
@@ -85,7 +86,15 @@ def get_servers(
     servers_result = servers_query.all()
 
     # get total number of servers
-    total_servers = db.query(func.count(Server.id)).scalar()
+    total_servers = (
+        db.query(
+            func.count(Server.id),
+        )
+        .filter(
+            Server.flagged_for_deletion == False,
+        )
+        .scalar()
+    )
 
     return servers_result, total_servers
 
@@ -129,13 +138,16 @@ def get_server(
         )
         .outerjoin(Vote, Server.id == Vote.server_id)
         .outerjoin(subquery, Server.id == subquery.c.server_id)
-        .filter(Server.id == server_id)
+        .filter(
+            Server.id == server_id,
+            Server.flagged_for_deletion == False,
+        )
         .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
         .one_or_none()
     )
 
     if not server_and_votes:
-        raise Exception("Server not found")
+        raise NotFound("Server not found")
 
     return server_and_votes
 
@@ -181,7 +193,10 @@ def get_my_servers(
         )
         .outerjoin(Vote, Server.id == Vote.server_id)
         .outerjoin(subquery, Server.id == subquery.c.server_id)
-        .filter(Server.user_id == user_id)
+        .filter(
+            Server.user_id == user_id,
+            Server.flagged_for_deletion == False,
+        )
         .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
         .order_by(
             desc("votes_this_month"),
@@ -277,10 +292,10 @@ def update_server(
     )
 
     if not server:
-        raise Exception("Server not found")
+        raise NotFound("Server not found")
 
     if server.user_id != user_id:
-        raise Exception("You do not own this server")
+        raise BadRequest("You do not own this server")
 
     if name != NOT_SET:
         server.name = name
@@ -472,17 +487,20 @@ def delete_server(
     )
 
     if not server:
-        raise Exception("Server not found")
+        raise NotFound("Server not found")
 
     if server.user_id != user_id:
-        raise Exception("You do not own this server")
+        raise BadRequest("You do not own this server")
+
+    server.flagged_for_deletion = True
+    server.flagged_for_deletion_at = datetime.now()
 
     with _handle_db_errors():
-        # delete all votes
-        db.query(Vote).filter(Vote.server_id == server_id).delete()
-        # delete all gameplay
-        db.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
-        db.delete(server)
+        # # delete all votes
+        # db.query(Vote).filter(Vote.server_id == server_id).delete()
+        # # delete all gameplay
+        # db.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
+        # db.delete(server)
         db.commit()
 
     return server_id

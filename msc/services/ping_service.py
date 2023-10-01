@@ -1,24 +1,23 @@
+import asyncio
+import base64
 import logging
 from contextlib import contextmanager
-import boto3
-from uuid import UUID
-import base64
-from socket import gaierror
-from typing import Optional, List
 from datetime import datetime
-import asyncio
+from socket import gaierror
+from typing import List, Optional
+from uuid import UUID
 
+import boto3
 from mcstatus import BedrockServer, JavaServer
-from mcstatus.status_response import JavaStatusResponse, BedrockStatusResponse
 from mcstatus.querier import QueryResponse
+from mcstatus.status_response import BedrockStatusResponse, JavaStatusResponse
+from sqlalchemy.orm import Session
 
 from msc.constants import ASYNC_POLL_BATCH_SIZE
-
+from msc.database import get_db
+from msc.errors import BadRequest, NotFound, Unauthorized
 from msc.models import Server
 from msc.utils.file_utils import _get_checksum
-from msc.errors import BadRequest, NotFound, Unauthorized
-from msc.database import get_db
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -443,6 +442,7 @@ def poll_server_by_id(
         db.query(Server)
         .filter(
             Server.id == server_id,
+            Server.flagged_for_deletion == False,
         )
         .one_or_none()
     )
@@ -555,7 +555,13 @@ def poll_servers_async():
 
     # Get all servers
     with _handle_db_errors():
-        servers = db.query(Server).all()
+        servers = (
+            db.query(Server)
+            .filter(
+                Server.flagged_for_deletion == False,
+            )
+            .all()
+        )
 
     asyncio.run(
         _poll_servers_aynsc_batch(

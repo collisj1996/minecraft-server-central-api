@@ -6,13 +6,13 @@ from json import JSONDecodeError
 
 from exceptiongroup import ExceptionGroup
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
-from msc.config import config
-from msc.dto.util import ErrorOutputDto
-from msc.errors import ApplicationError
 from pydantic import ValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from msc.config import config
+from msc.dto.util import ErrorOutputDto
+from msc.errors import ApplicationError
 
 logger = logging.getLogger(__name__)
 

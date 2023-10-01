@@ -1,5 +1,5 @@
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
 
 from msc.dto.base import BaseDto
 from msc.dto.custom_types import DateTimeUTC

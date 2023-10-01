@@ -1,11 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.requests import Request
+from sqlalchemy.orm import Session
 
+from msc.database import get_db
 from msc.dto.user_dto import UserAddInputDto
 from msc.services import user_service
-from msc.database import get_db
-from sqlalchemy.orm import Session
-from fastapi import Depends
 
 router = APIRouter()
 

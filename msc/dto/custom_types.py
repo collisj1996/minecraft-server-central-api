@@ -1,5 +1,6 @@
-from msc.dto.base import BaseDto
 from datetime import datetime
+
+from msc.dto.base import BaseDto
 
 
 class NotSet(BaseDto):

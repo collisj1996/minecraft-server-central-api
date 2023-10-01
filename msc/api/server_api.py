@@ -1,22 +1,17 @@
-from fastapi import APIRouter, Depends
-from fastapi.requests import Request
 from uuid import UUID
 
+from fastapi import APIRouter, Depends
+from fastapi.requests import Request
 from sqlalchemy.orm import Session
-from msc.dto.server_dto import (
-    GetServerDto,
-    ServerCreateInputDto,
-    ServerDto,
-    ServersGetOutputDto,
-    ServerUpdateInputDto,
-    ServerDeleteOutputDto,
-    ServersGetInputDto,
-    ServersMineOutputDto,
-    ServerPingOutputDto,
-)
-from msc.services import server_service, ping_service
-from msc.utils.api_utils import auth_required
+
 from msc.database import get_db
+from msc.dto.server_dto import (GetServerDto, ServerCreateInputDto,
+                                ServerDeleteOutputDto, ServerDto,
+                                ServerPingOutputDto, ServersGetInputDto,
+                                ServersGetOutputDto, ServersMineOutputDto,
+                                ServerUpdateInputDto)
+from msc.services import ping_service, server_service
+from msc.utils.api_utils import auth_required
 
 router = APIRouter()
 

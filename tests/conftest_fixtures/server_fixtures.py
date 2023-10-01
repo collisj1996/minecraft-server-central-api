@@ -1,5 +1,6 @@
-import pytest
 from uuid import uuid4
+
+import pytest
 
 from msc.models import User
 from msc.services import server_service, user_service

@@ -4,9 +4,9 @@ from uuid import uuid4
 
 import pytest
 
-from msc.errors import BadRequest
+from msc.errors import BadRequest, NotFound
 from msc.models import Server, User, Vote
-from msc.services import server_service, vote_service, user_service
+from msc.services import server_service, user_service, vote_service
 
 
 def test_get_servers_no_servers(session):
@@ -436,6 +436,8 @@ def test_delete_server(
 ):
     """Tests deleting a server"""
 
+    assert server_colcraft.flagged_for_deletion == False
+
     deleted_server_id = server_service.delete_server(
         db=session,
         server_id=server_colcraft.id,
@@ -443,8 +445,13 @@ def test_delete_server(
     )
 
     assert deleted_server_id == server_colcraft.id
-
-    assert session.query(Server).count() == 0
+    assert session.query(Server).count() == 1
+    assert (
+        session.query(Server)
+        .filter(Server.id == server_colcraft.id)
+        .one()
+        .flagged_for_deletion
+    )
 
 
 def test_delete_server_not_owned(
@@ -520,3 +527,82 @@ def test_get_my_servers(
 
     for s in my_servers:
         assert s[0].id in [server_hypixel.id]
+
+
+def test_get_server_deleted(session, server_colcraft: Server):
+    """Tests getting a server that has been flagged for deletion"""
+
+    server_service.delete_server(
+        db=session,
+        server_id=server_colcraft.id,
+        user_id=server_colcraft.user_id,
+    )
+
+    with pytest.raises(NotFound):
+        server_service.get_server(db=session, server_id=server_colcraft.id)
+
+
+def test_get_servers_deleted(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+):
+    """Tests getting servers that have been flagged for deletion"""
+
+    servers, total_servers = server_service.get_servers(
+        db=session,
+    )
+
+    assert len(servers) == 3
+    assert total_servers == 3
+
+    server_service.delete_server(
+        db=session,
+        server_id=server_colcraft.id,
+        user_id=server_colcraft.user_id,
+    )
+
+    server_service.delete_server(
+        db=session,
+        server_id=server_hypixel.id,
+        user_id=server_hypixel.user_id,
+    )
+
+    servers, total_servers = server_service.get_servers(
+        db=session,
+    )
+
+    assert len(servers) == 1
+    assert total_servers == 1
+
+    assert servers[0][0].id == server_colcraft_2.id
+
+
+def test_get_my_servers_deleted(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+):
+    """Tests getting my servers that have been flagged for deletion"""
+
+    my_servers = server_service.get_my_servers(
+        db=session,
+        user_id=server_colcraft.user_id,
+    )
+
+    assert len(my_servers) == 2
+
+    server_service.delete_server(
+        db=session,
+        server_id=server_colcraft.id,
+        user_id=server_colcraft.user_id,
+    )
+
+    my_servers = server_service.get_my_servers(
+        db=session,
+        user_id=server_colcraft.user_id,
+    )
+
+    assert len(my_servers) == 1
+    assert my_servers[0][0].id == server_colcraft_2.id

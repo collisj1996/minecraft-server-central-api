@@ -1,6 +1,5 @@
-import requests
-
 import pytest
+import requests
 
 server_ips = [
     "Play.Grindminecraft.com",

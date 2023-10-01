@@ -1,11 +1,12 @@
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID
-from dataclasses import dataclass
 
-from msc.models import Vote
-from msc.errors import TooManyRequests
 from sqlalchemy.orm import Session
+
+from msc.errors import NotFound, TooManyRequests
+from msc.models import Server, Vote
 
 
 @dataclass
@@ -32,6 +33,18 @@ def add_vote(
 ):
     """Adds a vote record to a server"""
 
+    server = (
+        db.query(Server)
+        .filter(
+            Server.id == server_id,
+            Server.flagged_for_deletion == False,
+        )
+        .one_or_none()
+    )
+
+    if not server:
+        raise NotFound("Server not found")
+
     if _has_user_voted_in_last_24_hours(db, server_id, client_ip):
         raise TooManyRequests(
             "You have already voted for this server in the last 24 hours"
@@ -39,7 +52,10 @@ def add_vote(
 
     # TODO: Send vote to votifier address
 
-    vote = Vote(server_id=server_id, client_ip_address=client_ip)
+    vote = Vote(
+        server_id=server_id,
+        client_ip_address=client_ip,
+    )
 
     db.add(vote)
 

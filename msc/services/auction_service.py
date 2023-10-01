@@ -1,14 +1,15 @@
+from collections import defaultdict
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
-from dataclasses import dataclass
 
-from collections import defaultdict
-from msc.models import Auction, AuctionBid, Server, User
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
-from msc.errors import NotFound, BadRequest, Unauthorized
+
 from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT
+from msc.errors import BadRequest, NotFound, Unauthorized
+from msc.models import Auction, AuctionBid, Server, User
 
 
 class InvalidBidAmount(BadRequest):
@@ -174,7 +175,6 @@ def _get_auction(db: Session, auction_id: UUID) -> GetAuctionInfo:
         .subquery()
     )
 
-    # TODO: Add a test for this
     bids = (
         db.query(AuctionBid)
         .join(

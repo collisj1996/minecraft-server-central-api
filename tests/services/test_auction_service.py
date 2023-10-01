@@ -1,14 +1,14 @@
-from datetime import datetime
-import pytest
-from uuid import uuid4
 import math
-
-from msc.models import Server, User, Auction, AuctionBid
-from msc.services import auction_service
-from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT
-from msc.errors import NotFound, Unauthorized
+from datetime import datetime
+from uuid import uuid4
 
 import freezegun
+import pytest
+
+from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT
+from msc.errors import NotFound, Unauthorized
+from msc.models import Auction, AuctionBid, Server, User
+from msc.services import auction_service
 
 
 def test_create_auction(

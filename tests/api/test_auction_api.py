@@ -1,8 +1,9 @@
-from fastapi.testclient import TestClient
-from msc.models import Auction, User
-from msc.config import config
-
 import math
+
+from fastapi.testclient import TestClient
+
+from msc.config import config
+from msc.models import Auction, User
 
 from .utils import get_auth_header, get_response_body
 

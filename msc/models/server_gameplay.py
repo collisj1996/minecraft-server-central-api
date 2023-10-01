@@ -1,13 +1,8 @@
 from uuid import uuid4
 
-from sqlalchemy import (
-    Column,
-    ForeignKeyConstraint,
-    Text,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, ForeignKeyConstraint, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 from msc import db
 

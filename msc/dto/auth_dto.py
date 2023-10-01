@@ -1,5 +1,6 @@
-from msc.dto.base import BaseDto
 from typing import Optional
+
+from msc.dto.base import BaseDto
 
 
 class GetTokenInputDto(BaseDto):

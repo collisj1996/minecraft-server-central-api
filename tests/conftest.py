@@ -6,21 +6,19 @@ from sqlalchemy.orm import close_all_sessions, sessionmaker
 
 # This needs to be imported before anything in the msc package
 import tests.utils.database_config_override  # noqa
-
-# from msc import db
-from msc.database import get_db, engine, SessionLocal
 from msc.app import create_app
 from msc.config import config
-from msc.database import Database
+# from msc import db
+from msc.database import Database, SessionLocal, engine, get_db
 from msc.migrations.db_migration import run_migrations
 from msc.utils.db_utils import validate_database
+from tests.conftest_fixtures.auction_fixtures import *
 from tests.conftest_fixtures.server_fixtures import *
 from tests.conftest_fixtures.user_fixtures import *
 from tests.conftest_fixtures.vote_fixtures import *
-from tests.conftest_fixtures.auction_fixtures import *
-from tests.conftest_mocks.server_mocks import *
 from tests.conftest_mocks.job_mocks import *
 from tests.conftest_mocks.ping_mocks import *
+from tests.conftest_mocks.server_mocks import *
 
 
 class DisabledSession:

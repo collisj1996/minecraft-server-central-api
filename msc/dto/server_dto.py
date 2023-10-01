@@ -1,10 +1,11 @@
 from typing import List, Optional
 from uuid import UUID
-from pydantic import conint, validator, conlist
+
+from pydantic import conint, conlist, validator
 
 from msc.constants import ALLOWED_GAMEPLAY, CDN_DOMAIN
-from msc.dto.custom_types import NOT_SET, DateTimeUTC
 from msc.dto.base import BaseDto
+from msc.dto.custom_types import NOT_SET, DateTimeUTC
 from msc.models import Server
 
 

@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 
-
 # def test_auth(session, test_client: TestClient):
 #     response = test_client.get(
 #         "/servers",

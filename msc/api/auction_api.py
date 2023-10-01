@@ -1,21 +1,17 @@
-from fastapi import APIRouter, Depends
-from fastapi.requests import Request
 import logging
 from uuid import UUID
 
-from msc.dto.auction_dto import (
-    AuctionCreateInputDto,
-    AuctionDto,
-    AuctionBidDto,
-    AuctionGetInputDto,
-    AuctionsGetInputDto,
-    AuctionBidCreateInputDto,
-    AuctionGetOutputDto,
-)
-from msc.services import auction_service
-from msc.database import get_db
+from fastapi import APIRouter, Depends
+from fastapi.requests import Request
 from sqlalchemy.orm import Session
-from msc.utils.api_utils import auth_required, admin_required
+
+from msc.database import get_db
+from msc.dto.auction_dto import (AuctionBidCreateInputDto, AuctionBidDto,
+                                 AuctionCreateInputDto, AuctionDto,
+                                 AuctionGetInputDto, AuctionGetOutputDto,
+                                 AuctionsGetInputDto)
+from msc.services import auction_service
+from msc.utils.api_utils import admin_required, auth_required
 
 router = APIRouter()
 
