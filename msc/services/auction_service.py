@@ -78,10 +78,18 @@ def add_auction_bid(
 ):
     """Adds an auction bid to the database"""
 
-    server = db.query(Server).filter(Server.id == server_id).one_or_none()
+    server = (
+        db.query(Server)
+        .filter(
+            Server.id == server_id,
+            Server.flagged_for_deletion == False,
+        )
+        .one_or_none()
+    )
     user = db.query(User).filter(User.id == user_id).one_or_none()
     auction = db.query(Auction).filter(Auction.id == auction_id).one_or_none()
 
+    # TODO: Add test for flagged_for_deletion
     if server is None:
         raise NotFound("Server not found")
 
@@ -160,7 +168,13 @@ def get_current_auction(db: Session) -> GetAuctionInfo:
 def _get_auction(db: Session, auction_id: UUID) -> GetAuctionInfo:
     """Gets an auction from the database"""
 
-    auction = db.query(Auction).filter(Auction.id == auction_id).one_or_none()
+    auction = (
+        db.query(Auction)
+        .filter(
+            Auction.id == auction_id,
+        )
+        .one_or_none()
+    )
 
     if auction is None:
         raise NotFound("Auction not found")
@@ -170,7 +184,12 @@ def _get_auction(db: Session, auction_id: UUID) -> GetAuctionInfo:
             AuctionBid.server_id,
             func.max(AuctionBid.amount).label("max_bid"),
         )
-        .filter(AuctionBid.auction_id == auction_id)
+        # TODO: Add test for flagged_for_deletion
+        .join(Server, Server.id == AuctionBid.server_id)
+        .filter(
+            AuctionBid.auction_id == auction_id,
+            Server.flagged_for_deletion == False,
+        )
         .group_by(AuctionBid.server_id)
         .subquery()
     )
@@ -229,7 +248,15 @@ def get_auctions(
             AuctionBid.server_id,
             func.max(AuctionBid.amount).label("max_bid"),
         )
-        .filter(AuctionBid.auction_id.in_(auction_ids))
+        .join(
+            Server,
+            Server.id == AuctionBid.server_id,
+        )
+        # TODO: Add test for flagged_for_deletion
+        .filter(
+            AuctionBid.auction_id.in_(auction_ids),
+            Server.flagged_for_deletion == False,
+        )
         .group_by(
             AuctionBid.auction_id,
             AuctionBid.server_id,
