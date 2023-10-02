@@ -4,6 +4,10 @@ services:
   db:
     restart: unless-stopped
     image: postgres:15.3-alpine
+    command:
+      - "postgres"
+      - "-c"
+      - "track_activity_query_size=1048576"
     ports:
       - "5432:5432"
     environment:

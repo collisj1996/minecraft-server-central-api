@@ -5,11 +5,19 @@ from fastapi.requests import Request
 from sqlalchemy.orm import Session
 
 from msc.database import get_db
-from msc.dto.server_dto import (GetServerDto, ServerCreateInputDto,
-                                ServerDeleteOutputDto, ServerDto,
-                                ServerPingOutputDto, ServersGetInputDto,
-                                ServersGetOutputDto, ServersMineOutputDto,
-                                ServerUpdateInputDto)
+from msc.dto.server_dto import (
+    GetServerDto,
+    ServerCreateInputDto,
+    ServerDeleteOutputDto,
+    ServerDto,
+    ServerPingOutputDto,
+    ServersGetInputDto,
+    ServersGetOutputDto,
+    ServersMineOutputDto,
+    ServerUpdateInputDto,
+    ServerGetHistoryInputDto,
+    ServerHistoryDto,
+)
 from msc.services import ping_service, server_service
 from msc.utils.api_utils import auth_required
 
@@ -193,3 +201,24 @@ def ping_server(
     return ServerPingOutputDto(
         message=response,
     )
+
+
+@router.get("/servers/{server_id}/historical")
+def get_server_historical_data(
+    server_id: str,
+    query_params: ServerGetHistoryInputDto = Depends(),
+    db: Session = Depends(get_db),
+) -> list[ServerHistoryDto]:
+    """Endpoint for getting a server's historical data"""
+
+    server_history = server_service.get_server_history(
+        db=db,
+        server_id=UUID(server_id),
+        from_date=query_params.from_date,
+        to_date=query_params.to_date,
+        include_votes=query_params.include_votes,
+        include_players=query_params.include_players,
+        include_is_online=query_params.include_is_online,
+    )
+
+    return [ServerHistoryDto.from_service(s) for s in server_history]

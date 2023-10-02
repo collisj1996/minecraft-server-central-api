@@ -5,8 +5,9 @@ from pydantic import conint, conlist, validator
 
 from msc.constants import ALLOWED_GAMEPLAY, CDN_DOMAIN
 from msc.dto.base import BaseDto
-from msc.dto.custom_types import NOT_SET, DateTimeUTC
-from msc.models import Server
+from msc.dto.custom_types import NOT_SET, DateTimeUTC, DateTimeIsoStr
+from msc.models import Server, ServerHistory
+from msc.services import server_service
 
 
 def _get_server_icon_url(
@@ -54,6 +55,7 @@ class ServerDto(BaseDto):
     updated_at: DateTimeUTC
     last_pinged_at: Optional[DateTimeUTC]
     owner_name: Optional[str]
+    uptime: Optional[float]
 
     @classmethod
     def from_service(cls, server: Server):
@@ -84,6 +86,25 @@ class ServerDto(BaseDto):
             owner_name=server.owner_name,
             web_store=server.web_store,
             video_url=server.video_url,
+            uptime=server.uptime,
+        )
+
+
+class ServerHistoryDto(BaseDto):
+    is_online: Optional[bool]
+    players: Optional[int]
+    votes_this_month: Optional[int]
+    votes_total: Optional[int]
+    created_at: DateTimeUTC
+
+    @classmethod
+    def from_service(cls, server_history: ServerHistory):
+        return cls(
+            is_online=server_history.is_online,
+            players=server_history.players,
+            votes_this_month=None,
+            votes_total=None,
+            created_at=server_history.created_at,
         )
 
 
@@ -228,3 +249,26 @@ class ServerDeleteOutputDto(BaseDto):
 
 class ServerPingOutputDto(BaseDto):
     message: str
+
+
+class ServerGetHistoryInputDto(BaseDto):
+    from_date: Optional[DateTimeIsoStr] = None
+    to_date: Optional[DateTimeIsoStr] = None
+    include_players: Optional[bool] = True
+    include_is_online: Optional[bool] = True
+    include_votes: Optional[bool] = False
+
+    # validate that at least one of the include_* fields is set
+    # TODO: Add test for this
+    @validator("include_votes")
+    def validate_include(cls, include_votes, values):
+        if (
+            not values["include_players"]
+            and not values["include_is_online"]
+            and not include_votes
+        ):
+            raise ValueError(
+                "At least one of include_players, include_is_online or include_votes must be set"
+            )
+
+        return include_votes

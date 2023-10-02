@@ -2,8 +2,17 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import (Boolean, CheckConstraint, Column, DateTime,
-                        ForeignKeyConstraint, Integer, Text, UniqueConstraint)
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKeyConstraint,
+    Integer,
+    Text,
+    UniqueConstraint,
+    Float,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -46,6 +55,7 @@ class Server(db.Base):
     web_store = Column(Text, nullable=True)
     flagged_for_deletion = Column(Boolean, nullable=False)
     flagged_for_deletion_at = Column(DateTime, nullable=True)
+    uptime = Column(Float, nullable=False)
 
     gameplay = relationship("ServerGameplay", backref="server")
 
@@ -110,6 +120,7 @@ class Server(db.Base):
         self.owner_name = owner_name
         self.web_store = web_store
         self.flagged_for_deletion = False
+        self.uptime = 100.0
 
         current_datetime = datetime.utcnow()
         self.created_at = current_datetime

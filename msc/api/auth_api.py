@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends
 from fastapi.requests import Request
 
-from msc.dto.auth_dto import (GetTokenInputDto, GetTokenOutputDto,
-                              RefreshTokenInputDto, RefreshTokenOutputDto)
+from msc.dto.auth_dto import (
+    GetTokenInputDto,
+    GetTokenOutputDto,
+    RefreshTokenInputDto,
+    RefreshTokenOutputDto,
+)
 from msc.services import auth_service
 
 router = APIRouter()

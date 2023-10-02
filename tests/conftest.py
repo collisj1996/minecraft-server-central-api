@@ -8,6 +8,7 @@ from sqlalchemy.orm import close_all_sessions, sessionmaker
 import tests.utils.database_config_override  # noqa
 from msc.app import create_app
 from msc.config import config
+
 # from msc import db
 from msc.database import Database, SessionLocal, engine, get_db
 from msc.migrations.db_migration import run_migrations

@@ -2,20 +2,26 @@ from socket import gaierror
 
 import pytest
 from mcstatus.querier import QueryResponse
-from mcstatus.status_response import (BedrockStatusPlayers,
-                                      BedrockStatusResponse,
-                                      BedrockStatusVersion, JavaStatusPlayer,
-                                      JavaStatusPlayers, JavaStatusResponse,
-                                      JavaStatusVersion)
+from mcstatus.status_response import (
+    BedrockStatusPlayers,
+    BedrockStatusResponse,
+    BedrockStatusVersion,
+    JavaStatusPlayer,
+    JavaStatusPlayers,
+    JavaStatusResponse,
+    JavaStatusVersion,
+)
 
 from msc.models import Server, User
 from msc.services import server_service
-from msc.services.ping_service import (_poll_servers_aynsc_batch,
-                                       _upload_server_icon,
-                                       poll_bedrock_server,
-                                       poll_bedrock_server_async,
-                                       poll_java_server,
-                                       poll_java_server_async)
+from msc.services.ping_service import (
+    _poll_servers_aynsc_batch,
+    _upload_server_icon,
+    poll_bedrock_server,
+    poll_bedrock_server_async,
+    poll_java_server,
+    poll_java_server_async,
+)
 
 pytest_plugins = ("pytest_asyncio",)
 

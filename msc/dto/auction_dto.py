@@ -3,8 +3,11 @@ from uuid import UUID
 
 from pydantic import conint
 
-from msc.constants import (DEFAULT_AUCTION_PAGE, DEFAULT_AUCTION_PAGE_SIZE,
-                           MAX_AUCTIONS_PAGE_SIZE)
+from msc.constants import (
+    DEFAULT_AUCTION_PAGE,
+    DEFAULT_AUCTION_PAGE_SIZE,
+    MAX_AUCTIONS_PAGE_SIZE,
+)
 from msc.dto.base import BaseDto
 from msc.dto.custom_types import DateTimeIsoStr, DateTimeUTC
 from msc.models import Auction, AuctionBid

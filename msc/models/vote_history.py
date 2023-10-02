@@ -1,41 +1,50 @@
 from datetime import datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from sqlalchemy import Column, DateTime, ForeignKeyConstraint, Text, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    ForeignKeyConstraint,
+    UniqueConstraint,
+    CheckConstraint,
+    DateTime,
+    Boolean,
+    Integer,
+)
 from sqlalchemy.dialects.postgresql import UUID
 
 from msc import db
 
 
-class Vote(db.Base):
+class VoteHistory(db.Base):
     """
-    Represents a vote
+    Represents a historical data point for a votes for a server listing older than 30 days
     """
 
-    __tablename__ = "vote"
+    __tablename__ = "vote_history"
 
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid4)
     server_id = Column(UUID(as_uuid=True), nullable=False)
-    client_ip_address = Column(Text, nullable=False)
+    new_vote_count = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False)
 
     __table_args__ = (
+        UniqueConstraint(
+            "id",
+            name="unique_vote_history_id",
+        ),
         ForeignKeyConstraint(
             ["server_id"],
             ["server.id"],
             ondelete="CASCADE",
-        ),
-        UniqueConstraint(
-            "id",
-            name="unique_vote_id",
         ),
     )
 
     def __init__(
         self,
         server_id: UUID,
-        client_ip_address: str,
+        new_vote_count: int,
     ):
         self.server_id = server_id
-        self.client_ip_address = client_ip_address
+        self.new_vote_count = new_vote_count
+
         self.created_at = datetime.utcnow()

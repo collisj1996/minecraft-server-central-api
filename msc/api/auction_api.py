@@ -6,10 +6,15 @@ from fastapi.requests import Request
 from sqlalchemy.orm import Session
 
 from msc.database import get_db
-from msc.dto.auction_dto import (AuctionBidCreateInputDto, AuctionBidDto,
-                                 AuctionCreateInputDto, AuctionDto,
-                                 AuctionGetInputDto, AuctionGetOutputDto,
-                                 AuctionsGetInputDto)
+from msc.dto.auction_dto import (
+    AuctionBidCreateInputDto,
+    AuctionBidDto,
+    AuctionCreateInputDto,
+    AuctionDto,
+    AuctionGetInputDto,
+    AuctionGetOutputDto,
+    AuctionsGetInputDto,
+)
 from msc.services import auction_service
 from msc.utils.api_utils import admin_required, auth_required
 

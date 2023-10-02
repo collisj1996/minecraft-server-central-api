@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from msc.constants import ASYNC_POLL_BATCH_SIZE
 from msc.database import get_db
 from msc.errors import BadRequest, NotFound, Unauthorized
-from msc.models import Server
+from msc.models import Server, ServerHistory
 from msc.utils.file_utils import _get_checksum
 
 logger = logging.getLogger(__name__)
@@ -189,33 +189,42 @@ def poll_bedrock_server(
     minecraft_server = BedrockServer.lookup(ip)
 
     is_online = False
+    players = 0
 
     try:
         status: BedrockStatusResponse = minecraft_server.status()
 
         is_online = True
+        players = status.players.online
+
         server.is_online = is_online
-        server.players = status.players.online
+        server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
 
     except TimeoutError as e:
-        server.is_online = False
-        server.players = 0
+        pass
     except gaierror as e:
-        server.is_online = False
-        server.players = 0
+        pass
     except Exception as e:
-        server.is_online = False
-        server.players = 0
         logger.error(f"Unhandled error polling bedrock server: {e}")
+    finally:
+        server.is_online = is_online
+        server.players = players
+
+        _create_server_history_data_point(
+            db=db,
+            server=server,
+            is_online=is_online,
+            players=players,
+            commit=False,
+        )
 
     if commit:
         with _handle_db_errors():
             db.commit()
 
-    if not is_online:
-        return False
+    return is_online
 
 
 def poll_java_server(
@@ -239,13 +248,16 @@ def poll_java_server(
     minecraft_server = JavaServer.lookup(ip)
 
     is_online = False
+    players = 0
 
     try:
         status: JavaStatusResponse = minecraft_server.status()
 
         is_online = True
+        players = status.players.online
+
         server.is_online = is_online
-        server.players = status.players.online
+        server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
 
@@ -261,57 +273,73 @@ def poll_java_server(
         else:
             server.icon_checksum = None
 
+    except TimeoutError as timeout_error:
+        pass
+        # Dont commit here, we need to check query
+    except gaierror as gai_error:
+        pass
+        # Dont commit here, we need to check query
+    except Exception as e:
+        logger.error(f"Unhandled error polling java server by status: {e}")
+        # Dont commit here, we need to check query
+    finally:
+        server.is_online = is_online
+        server.players = players
+
+        _create_server_history_data_point(
+            db=db,
+            server=server,
+            is_online=is_online,
+            players=players,
+            commit=False,
+        )
+
+    # If server is online by status, we dont need to check query
+    if is_online:
         if commit:
             with _handle_db_errors():
                 db.commit()
 
-    except TimeoutError as timeout_error:
-        server.is_online = False
-        server.players = 0
-        # Dont commit here, we need to check query
-    except gaierror as gai_error:
-        server.is_online = False
-        server.players = 0
-        # Dont commit here, we need to check query
-    except Exception as e:
-        server.is_online = False
-        server.players = 0
-        logger.error(f"Unhandled error polling java server by status: {e}")
-        # Dont commit here, we need to check query
-
-    # If server is online by status, we dont need to check query
-    if is_online:
         return True
 
     try:
         query: QueryResponse = minecraft_server.query()
 
         is_online = True
+        players = query.players.online
+
         server.is_online = is_online
-        server.players = query.players.online
+        server.players = players
         server.max_players = query.players.max
         server.last_pinged_at = datetime.utcnow()
 
     except TimeoutError as timeout_error:
-        server.is_online = False
-        server.players = 0
+        pass
     except Exception as e:
-        server.is_online = False
-        server.players = 0
         logger.error(f"Unhandled error polling java server by query: {e}")
+    finally:
+        server.is_online = is_online
+        server.players = players
+
+        _create_server_history_data_point(
+            db=db,
+            server=server,
+            is_online=is_online,
+            players=players,
+            commit=False,
+        )
 
     if commit:
         with _handle_db_errors():
             db.commit()
 
-    if not is_online:
-        return False
+    return is_online
 
 
 async def poll_bedrock_server_async(
     db: Session,
     server: Server,
-):
+) -> bool:
     """Polls a bedrock server for information asyncronously"""
 
     ip = server.bedrock_ip_address
@@ -322,38 +350,47 @@ async def poll_bedrock_server_async(
     minecraft_server = BedrockServer.lookup(ip)
 
     is_online = False
+    players = 0
 
     try:
         status: BedrockStatusResponse = await minecraft_server.async_status()
 
         is_online = True
+        players = status.players.online
+
         server.is_online = is_online
-        server.players = status.players.online
+        server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
 
     except TimeoutError as e:
-        server.is_online = False
-        server.players = 0
+        pass
     except gaierror as e:
-        server.is_online = False
-        server.players = 0
+        pass
     except Exception as e:
-        server.is_online = False
-        server.players = 0
         logger.error(f"Unhandled error polling bedrock server: {e}")
+    finally:
+        server.is_online = is_online
+        server.players = players
+
+        _create_server_history_data_point(
+            db=db,
+            server=server,
+            is_online=is_online,
+            players=players,
+            commit=False,
+        )
 
     with _handle_db_errors():
         db.commit()
 
-    if not is_online:
-        return
+    return is_online
 
 
 async def poll_java_server_async(
     db: Session,
     server: Server,
-):
+) -> bool:
     """Polls a java server for information asyncronously"""
 
     ip = server.java_ip_address
@@ -362,6 +399,7 @@ async def poll_java_server_async(
         ip = f"{ip}:{server.java_port}"
 
     is_online = False
+    players = 0
 
     try:
         status: JavaStatusResponse = await (
@@ -369,8 +407,10 @@ async def poll_java_server_async(
         ).async_status()
 
         is_online = True
+        players = status.players.online
+
         server.is_online = is_online
-        server.players = status.players.online
+        server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
 
@@ -385,50 +425,66 @@ async def poll_java_server_async(
                 )
         else:
             server.icon_checksum = None
+    except TimeoutError as timeout_error:
+        # Dont commit here, we need to check query
+        pass
+    except gaierror as gai_error:
+        # Dont commit here, we need to check query
+        pass
+    except Exception as e:
+        logger.error(f"Unhandled error polling java server by status: {e}")
+        # Dont commit here, we need to check query
+    finally:
+        server.is_online = is_online
+        server.players = players
 
+        _create_server_history_data_point(
+            db=db,
+            server=server,
+            is_online=is_online,
+            players=players,
+            commit=False,
+        )
+
+    # If server is online by status, we dont need to check query
+    # and we can commit here
+    if is_online:
         with _handle_db_errors():
             db.commit()
 
-    except TimeoutError as timeout_error:
-        server.is_online = False
-        server.players = 0
-        # Dont commit here, we need to check query
-    except gaierror as gai_error:
-        server.is_online = False
-        server.players = 0
-        # Dont commit here, we need to check query
-    except Exception as e:
-        server.is_online = False
-        server.players = 0
-        logger.error(f"Unhandled error polling java server by status: {e}")
-        # Dont commit here, we need to check query
-
-    # If server is online by status, we dont need to check query
-    if is_online:
         return True
 
     try:
         query: QueryResponse = await (await JavaServer.async_lookup(ip)).async_query()
 
         is_online = True
+        players = query.players.online
+
         server.is_online = is_online
         server.players = query.players.online
         server.max_players = query.players.max
         server.last_pinged_at = datetime.utcnow()
 
     except TimeoutError as timeout_error:
-        server.is_online = False
-        server.players = 0
+        pass
     except Exception as e:
-        server.is_online = False
-        server.players = 0
         logger.error(f"Unhandled error polling java server by query: {e}")
+    finally:
+        server.is_online = is_online
+        server.players = players
+
+        _create_server_history_data_point(
+            db=db,
+            server=server,
+            is_online=is_online,
+            players=players,
+            commit=False,
+        )
 
     with _handle_db_errors():
         db.commit()
 
-    if not is_online:
-        return False
+    return is_online
 
 
 def poll_server_by_id(
@@ -542,6 +598,8 @@ async def _poll_servers_aynsc_batch(db: Session, servers: List[Server]):
         )
         print(f"Processed {i} servers")
 
+    db.close()
+
 
 def poll_servers_async():
     """Polls minecraft servers for information"""
@@ -569,3 +627,43 @@ def poll_servers_async():
             servers=servers,
         )
     )
+
+
+def _create_server_history_data_point(
+    db: Session,
+    server: Server,
+    is_online: bool,
+    players: int,
+    commit: bool = True,
+):
+    """Creates a data point in the server history table, limited to 1 per 60 seconds"""
+
+    # Get the last data point
+    last_data_point = (
+        db.query(ServerHistory)
+        .filter(
+            ServerHistory.server_id == server.id,
+        )
+        .order_by(
+            ServerHistory.created_at.desc(),
+        )
+        .first()
+    )
+
+    if last_data_point:
+        # If the last data point was created less than a minute ago, dont create a new one
+        # This is to prevent spamming the database with data points
+        if (datetime.utcnow() - last_data_point.created_at).total_seconds() < 60:
+            return
+
+    server_history = ServerHistory(
+        server_id=server.id,
+        is_online=is_online,
+        players=players,
+    )
+
+    db.add(server_history)
+
+    if commit:
+        with _handle_db_errors():
+            db.commit()

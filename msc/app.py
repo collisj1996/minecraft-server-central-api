@@ -14,8 +14,15 @@ from msc.config import config
 from msc.constants import ADMIN_USER_IDS
 
 from . import loggingutil
-from .api import (auction_api, auth_api, migration_api, server_api, user_api,
-                  util_api, vote_api)
+from .api import (
+    auction_api,
+    auth_api,
+    migration_api,
+    server_api,
+    user_api,
+    util_api,
+    vote_api,
+)
 from .jobs.jobs import scheduler
 
 logger = logging.getLogger(__name__)

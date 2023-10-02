@@ -1,6 +1,6 @@
 import base64
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from typing import List, Optional
 from uuid import UUID
@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from msc.dto.custom_types import NOT_SET
 from msc.errors import BadRequest, NotFound
-from msc.models import Server, ServerGameplay, Vote
+from msc.models import Server, ServerGameplay, Vote, ServerHistory, ServerHistoryOld
 from msc.services import ping_service
 from msc.utils.file_utils import _get_checksum
 
@@ -496,11 +496,58 @@ def delete_server(
     server.flagged_for_deletion_at = datetime.now()
 
     with _handle_db_errors():
-        # # delete all votes
-        # db.query(Vote).filter(Vote.server_id == server_id).delete()
-        # # delete all gameplay
-        # db.query(ServerGameplay).filter(ServerGameplay.server_id == server_id).delete()
-        # db.delete(server)
         db.commit()
 
     return server_id
+
+
+def get_server_history(
+    db: Session,
+    server_id: UUID,
+    from_date: datetime = None,
+    to_date: datetime = None,
+    include_votes: Optional[bool] = None,
+    include_players: Optional[bool] = None,
+    include_is_online: Optional[bool] = None,
+) -> List[ServerHistory]:
+    """Returns a server's historical data"""
+
+    server = (
+        db.query(Server)
+        .filter(
+            Server.id == server_id,
+            Server.flagged_for_deletion == False,
+        )
+        .one_or_none()
+    )
+
+    if not server:
+        raise NotFound("Server not found")
+
+    now = datetime.now()
+
+    if not from_date:
+        from_date = now - timedelta(days=30)
+
+    if not to_date:
+        to_date = now
+
+    # get base server history data
+    server_history = (
+        db.query(ServerHistory)
+        .filter(
+            ServerHistory.server_id == server_id,
+            ServerHistory.created_at >= from_date,
+            ServerHistory.created_at <= to_date,
+        )
+        .order_by(
+            ServerHistory.created_at.desc(),
+        )
+        .all()
+    )
+
+    # TODO: Get vote history data
+
+    # TODO: Incorporate data from server history old
+
+    return server_history
