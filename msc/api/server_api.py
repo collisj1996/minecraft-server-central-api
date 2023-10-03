@@ -15,7 +15,7 @@ from msc.dto.server_dto import (
     ServersGetOutputDto,
     ServersMineOutputDto,
     ServerUpdateInputDto,
-    # ServerGetHistoryInputDto,
+    ServerGetHistoryInputDto,
     ServerHistoryDto,
 )
 from msc.services import ping_service, server_service
@@ -206,7 +206,7 @@ def ping_server(
 @router.get("/servers/{server_id}/historical")
 def get_server_historical_data(
     server_id: str,
-    # query_params: ServerGetHistoryInputDto = Depends(),
+    query_params: ServerGetHistoryInputDto = Depends(),
     db: Session = Depends(get_db),
 ) -> list[ServerHistoryDto]:
     """Endpoint for getting a server's historical data"""
@@ -214,6 +214,7 @@ def get_server_historical_data(
     server_history = server_service.get_server_history(
         db=db,
         server_id=UUID(server_id),
+        time_interval=query_params.time_interval,
     )
 
     return [ServerHistoryDto.from_service(s) for s in server_history]

@@ -579,8 +579,8 @@ def get_server_history(
     server_history = (
         db.query(
             func.DATE_TRUNC(time_interval, ServerHistory.created_at).label("date"),
-            cast(func.avg(ServerHistory.rank), Integer).label("rank"),
-            cast(func.avg(ServerHistory.players), Integer).label("players"),
+            cast(func.min(ServerHistory.rank), Integer).label("rank"),
+            cast(func.max(ServerHistory.players), Integer).label("players"),
             cast(func.avg(ServerHistory.uptime), Float).label("uptime"),
             cast(func.sum(ServerHistory.new_votes), Integer).label("new_votes"),
             cast(func.max(ServerHistory.votes_this_month), Integer).label(
