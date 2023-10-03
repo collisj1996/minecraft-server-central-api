@@ -27,6 +27,9 @@ class ServerHistory(db.Base):
     uptime = Column(Integer, nullable=False)
     players = Column(Integer, nullable=False)
     rank = Column(Integer, nullable=False)
+    new_votes = Column(Integer, nullable=False)
+    votes_this_month = Column(Integer, nullable=False)
+    total_votes = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False)
 
     __table_args__ = (
@@ -48,11 +51,17 @@ class ServerHistory(db.Base):
         players: int,
         rank: int,
         uptime: int,
+        new_votes: int,
+        votes_this_month: int,
+        total_votes: int,
     ):
         self.server_id = server_id
         self.is_online = is_online
         self.players = players
         self.rank = rank
         self.uptime = uptime
+        self.new_votes = new_votes
+        self.votes_this_month = votes_this_month
+        self.total_votes = total_votes
 
         self.created_at = datetime.utcnow()

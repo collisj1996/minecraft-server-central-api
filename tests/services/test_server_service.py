@@ -713,7 +713,7 @@ def test_get_server_rank(
     assert colcraft_2_rank == servers[2].rank
 
 
-def test_get_server_history(
+def test_get_server_history_by_hour(
     session,
     server_colcraft: Server,
     server_colcraft_history,
@@ -721,5 +721,27 @@ def test_get_server_history(
     """Tests getting a server's historical data"""
 
     server_history = server_service.get_server_history(
-        db=session, server_id=server_colcraft.id
+        db=session,
+        server_id=server_colcraft.id,
+        time_interval="hour",
     )
+
+    # TODO: Finish this test
+    print(1)
+
+
+def test_get_server_history_by_day(
+    session,
+    server_colcraft: Server,
+    server_colcraft_history,
+):
+    """Tests getting a server's historical data"""
+
+    server_history = server_service.get_server_history(
+        db=session,
+        server_id=server_colcraft.id,
+        time_interval="day",
+    )
+
+    # TODO: Finish this test
+    print(1)

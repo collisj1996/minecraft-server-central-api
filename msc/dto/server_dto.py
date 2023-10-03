@@ -95,9 +95,9 @@ class ServerHistoryDto(BaseDto):
     players: int
     uptime: float
     rank: int
-    votes: int
-    votes_this_month: int
-    total_votes: int
+    new_votes: int
+    votes_this_month: Optional[int]
+    total_votes: Optional[int]
 
     @classmethod
     def from_service(cls, server_history: server_service.ServerHistoryInfo):
@@ -106,7 +106,7 @@ class ServerHistoryDto(BaseDto):
             players=server_history.players,
             uptime=server_history.uptime,
             rank=server_history.rank,
-            votes=server_history.votes,
+            new_votes=server_history.new_votes,
             votes_this_month=server_history.votes_this_month,
             total_votes=server_history.total_votes,
         )
@@ -259,24 +259,11 @@ class ServerPingOutputDto(BaseDto):
     message: str
 
 
-# class ServerGetHistoryInputDto(BaseDto):
-#     from_date: Optional[DateTimeIsoStr] = None
-#     to_date: Optional[DateTimeIsoStr] = None
-#     include_players: Optional[bool] = True
-#     include_is_online: Optional[bool] = True
-#     include_votes: Optional[bool] = False
+class ServerGetHistoryInputDto(BaseDto):
+    time_interval: Optional[str] = "day"
 
-#     # validate that at least one of the include_* fields is set
-#     # TODO: Add test for this
-#     @validator("include_votes")
-#     def validate_include(cls, include_votes, values):
-#         if (
-#             not values["include_players"]
-#             and not values["include_is_online"]
-#             and not include_votes
-#         ):
-#             raise ValueError(
-#                 "At least one of include_players, include_is_online or include_votes must be set"
-#             )
-
-#         return include_votes
+    @validator("time_interval")
+    def validate_time_interval(cls, time_interval):
+        if time_interval not in ["day", "hour"]:
+            raise ValueError("Invalid time interval, must be day or hour")
+        return time_interval

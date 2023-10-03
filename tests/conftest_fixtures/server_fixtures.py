@@ -5,7 +5,7 @@ import freezegun
 from datetime import datetime, timedelta
 
 from msc.models import User, ServerHistory, Server
-from msc.services import server_service, user_service
+from msc.services import server_service, user_service, vote_service
 
 
 @pytest.fixture
@@ -179,15 +179,25 @@ def server_colcraft_history(
 
     5 days one data point per hour"""
 
+    now = datetime.utcnow()
+    five_days_ago = now - timedelta(days=5)
+
     for days in range(1, 5):
         for hours in range(1, 24):
             with freezegun.freeze_time(
-                datetime.utcnow() - timedelta(days=days, hours=hours)
+                five_days_ago + timedelta(days=days, hours=hours)
             ):
                 is_online = hours % 12 != 0
                 players = days * (hours % 5)
                 rank = days % 5
                 uptime = 100 - days
+
+                for i in range(0, rank):
+                    vote_service.add_vote(
+                        db=session,
+                        server_id=server_colcraft.id,
+                        client_ip=str(uuid4()),
+                    )
 
                 data_point = ServerHistory(
                     server_id=server_colcraft.id,
@@ -195,7 +205,19 @@ def server_colcraft_history(
                     players=players,
                     rank=rank,
                     uptime=uptime,
+                    new_votes=vote_service.get_new_votes(
+                        db=session,
+                        server=server_colcraft,
+                    ),
+                    total_votes=vote_service.get_total_votes(
+                        db=session,
+                        server=server_colcraft,
+                    ),
+                    votes_this_month=vote_service.get_votes_this_month(
+                        db=session,
+                        server=server_colcraft,
+                    ),
                 )
 
                 session.add(data_point)
-    session.commit()
+                session.commit()

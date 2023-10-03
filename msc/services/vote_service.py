@@ -3,10 +3,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID
 
+from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 
 from msc.errors import NotFound, TooManyRequests
-from msc.models import Server, Vote
+from msc.models import Server, Vote, ServerHistory
 
 
 @dataclass
@@ -121,3 +122,88 @@ def check_vote_info(
         last_vote=last_vote.created_at,
         time_left_ms=time_left_ms,
     )
+
+
+def get_total_votes(
+    db: Session,
+    server: Server,
+):
+    """Gets the total number of votes for a server"""
+
+    total_votes = (
+        db.query(Vote)
+        .filter(
+            Vote.server_id == server.id,
+        )
+        .count()
+    )
+
+    return total_votes
+
+
+def get_votes_this_month(
+    db: Session,
+    server: Server,
+):
+    """Gets the total number of votes for a server this month"""
+
+    # Get the current month and year
+    now = datetime.now()
+    month = now.month
+    year = now.year
+
+    votes_this_month = (
+        db.query(Vote)
+        .filter(
+            Vote.server_id == server.id,
+            and_(
+                func.extract("month", Vote.created_at) == month,
+                func.extract("year", Vote.created_at) == year,
+            ),
+        )
+        .count()
+    )
+
+    return votes_this_month
+
+
+# TODO: Test this
+def get_new_votes(
+    db: Session,
+    server: Server,
+):
+    """Gets any new votes since the last datapoint created"""
+
+    # Get the last data point
+    last_data_point = (
+        db.query(ServerHistory)
+        .filter(
+            ServerHistory.server_id == server.id,
+        )
+        .order_by(
+            ServerHistory.created_at.desc(),
+        )
+        .first()
+    )
+
+    # if no data points exist we should return all votes
+    if not last_data_point:
+        return (
+            db.query(Vote)
+            .filter(
+                Vote.server_id == server.id,
+            )
+            .count()
+        )
+
+    # Get the number of votes after the last data point
+    new_votes = (
+        db.query(Vote)
+        .filter(
+            Vote.server_id == server.id,
+            Vote.created_at > last_data_point.created_at,
+        )
+        .count()
+    )
+
+    return new_votes

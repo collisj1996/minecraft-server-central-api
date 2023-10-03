@@ -16,8 +16,13 @@ from sqlalchemy.orm import Session
 from msc.constants import ASYNC_POLL_BATCH_SIZE
 from msc.database import get_db
 from msc.errors import BadRequest, NotFound, Unauthorized
-from msc.models import Server, ServerHistory
+from msc.models import Server, ServerHistory, Vote
 from msc.utils.file_utils import _get_checksum
+from msc.services.vote_service import (
+    get_total_votes,
+    get_votes_this_month,
+    get_new_votes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -728,26 +733,36 @@ def _create_server_history_data_point(
 
     from msc.services.server_service import get_server_rank
 
-    rank = None
     try:
-        rank = get_server_rank(
-            db=db,
-            server=server,
+        server_history = ServerHistory(
+            server_id=server.id,
+            is_online=is_online,
+            players=players,
+            rank=get_server_rank(
+                db=db,
+                server=server,
+            ),
+            uptime=server.uptime,
+            new_votes=get_new_votes(
+                db=db,
+                server=server,
+            ),
+            votes_this_month=get_votes_this_month(
+                db=db,
+                server=server,
+            ),
+            total_votes=get_total_votes(
+                db=db,
+                server=server,
+            ),
         )
+
+        db.add(server_history)
+
+        if commit:
+            with _handle_db_errors():
+                db.commit()
+
     except Exception as e:
-        logger.error(f"Error getting server rank: {e}")
+        logger.error(f"Error creating server history: {e}")
         pass
-
-    server_history = ServerHistory(
-        server_id=server.id,
-        is_online=is_online,
-        players=players,
-        rank=rank,
-        uptime=server.uptime,
-    )
-
-    db.add(server_history)
-
-    if commit:
-        with _handle_db_errors():
-            db.commit()

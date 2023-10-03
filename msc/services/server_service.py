@@ -48,7 +48,7 @@ class ServerHistoryInfo:
     rank: float
     players: float
     uptime: float
-    votes: int
+    new_votes: int
     votes_this_month: int
     total_votes: int
 
@@ -551,8 +551,13 @@ def delete_server(
 def get_server_history(
     db: Session,
     server_id: UUID,
+    time_interval: str = "day",
 ) -> List[ServerHistory]:
     """Returns a server's historical data"""
+
+    # TODO: Test this
+    if time_interval not in ["day", "hour"]:
+        raise BadRequest("Invalid time interval")
 
     server = (
         db.query(Server)
@@ -570,34 +575,18 @@ def get_server_history(
     from_date = now - timedelta(days=30)
     to_date = now
 
-    # get base server history data
     # TODO: Add rigourous testing for this
     server_history = (
         db.query(
-            func.DATE_TRUNC("hour", ServerHistory.created_at).label("date"),
+            func.DATE_TRUNC(time_interval, ServerHistory.created_at).label("date"),
             cast(func.avg(ServerHistory.rank), Integer).label("rank"),
             cast(func.avg(ServerHistory.players), Integer).label("players"),
             cast(func.avg(ServerHistory.uptime), Float).label("uptime"),
-            func.count(Vote.id).label("votes"),
-            func.count(
-                case(
-                    (extract("year", Vote.created_at) == extract("year", func.now()))
-                    & (
-                        extract("month", Vote.created_at)
-                        == extract("month", func.now())
-                    ),
-                    value=True,
-                )
-            ).label("votes_this_month"),
-            func.count(Vote.id).label("total_votes"),
-        )
-        .outerjoin(
-            Vote,
-            and_(
-                Vote.server_id == ServerHistory.server_id,
-                Vote.created_at >= from_date,
-                Vote.created_at <= to_date,
+            cast(func.sum(ServerHistory.new_votes), Integer).label("new_votes"),
+            cast(func.max(ServerHistory.votes_this_month), Integer).label(
+                "votes_this_month"
             ),
+            cast(func.max(ServerHistory.total_votes), Integer).label("total_votes"),
         )
         .filter(
             ServerHistory.server_id == server_id,
@@ -615,7 +604,7 @@ def get_server_history(
             rank=s[1],
             players=s[2],
             uptime=s[3],
-            votes=s[4],
+            new_votes=s[4],
             votes_this_month=s[5],
             total_votes=s[6],
         )
