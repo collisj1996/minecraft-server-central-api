@@ -7,15 +7,16 @@ import pytest
 from msc.errors import BadRequest, NotFound
 from msc.models import Server, User, Vote
 from msc.services import server_service, user_service, vote_service
+from msc.services.server_service import GetServersInfo, GetServerInfo
 
 
 def test_get_servers_no_servers(session):
     """Tests getting servers - no servers"""
 
-    servers, total_servers = server_service.get_servers(db=session)
+    servers_info: GetServersInfo = server_service.get_servers(db=session)
 
-    assert servers == []
-    assert total_servers == 0
+    assert servers_info.servers == []
+    assert servers_info.total_servers == 0
 
 
 def test_get_servers(
@@ -25,20 +26,31 @@ def test_get_servers(
 ):
     """Tests getting servers"""
 
-    servers, total_servers = server_service.get_servers(db=session)
+    servers_info: GetServersInfo = server_service.get_servers(db=session)
+
+    servers = servers_info.servers
+    total_servers = servers_info.total_servers
 
     assert len(servers) == 2
     assert total_servers == 2
 
-    hypixel_server = next(s for s in servers if s[0].id == server_hypixel.id)
-    colcraft_server = next(s for s in servers if s[0].id == server_colcraft.id)
+    hypixel_server_info = next(s for s in servers if s.server.id == server_hypixel.id)
+    hypixel = hypixel_server_info.server
+    hypixel_total_votes = hypixel_server_info.total_votes
+    hypixel_votes_this_month = hypixel_server_info.votes_this_month
 
-    assert hypixel_server
-    assert hypixel_server[1] == 0
-    assert hypixel_server[2] == 0
-    assert colcraft_server
-    assert colcraft_server[1] == 0
-    assert colcraft_server[2] == 0
+    colcraft_server_info = next(s for s in servers if s.server.id == server_colcraft.id)
+    colcraft = colcraft_server_info.server
+    colcraft_total_votes = colcraft_server_info.total_votes
+    colcraft_votes_this_month = colcraft_server_info.votes_this_month
+
+    assert hypixel
+    assert hypixel_total_votes == 0
+    assert hypixel_votes_this_month == 0
+
+    assert colcraft
+    assert colcraft_total_votes == 0
+    assert colcraft_votes_this_month == 0
 
 
 def test_get_servers_with_votes(
@@ -61,21 +73,24 @@ def test_get_servers_with_votes(
         db=session, server_id=server_hypixel.id, client_ip="192.168.0.1"
     )
 
-    servers, total_servers = server_service.get_servers(
+    servers_info: GetServersInfo = server_service.get_servers(
         db=session,
     )
 
+    servers = servers_info.servers
+
     assert len(servers) == 2
 
-    hypixel_server = next(s for s in servers if s[0].id == server_hypixel.id)
-    colcraft_server = next(s for s in servers if s[0].id == server_colcraft.id)
+    hypixel_server = next(s for s in servers if s.server.id == server_hypixel.id)
+    colcraft_server = next(s for s in servers if s.server.id == server_colcraft.id)
 
-    assert hypixel_server
-    assert hypixel_server[1] == 1
-    assert hypixel_server[2] == 1
-    assert colcraft_server
-    assert colcraft_server[1] == 2
-    assert colcraft_server[2] == 2
+    assert hypixel_server.server
+    assert hypixel_server.votes_this_month == 1
+    assert hypixel_server.total_votes == 1
+
+    assert colcraft_server.server
+    assert colcraft_server.votes_this_month == 2
+    assert colcraft_server.total_votes == 2
 
 
 def test_get_servers_with_votes_order(
@@ -93,36 +108,48 @@ def test_get_servers_with_votes_order(
         db=session, server_id=server_colcraft.id, client_ip="11.11.11.11"
     )
 
-    servers, total_servers = server_service.get_servers(
+    servers_info: GetServersInfo = server_service.get_servers(
         db=session,
     )
+
+    servers = servers_info.servers
+    total_servers = servers_info.total_servers
 
     assert len(servers) == 2
     assert total_servers == 2
 
     # colcraft should be first as it has the most votes
-    assert servers[0][0].id == server_colcraft.id
+    assert servers[0].server.id == server_colcraft.id
 
     # now gives 3 votes to hypixel
     vote_service.add_vote(
-        db=session, server_id=server_hypixel.id, client_ip="192.168.0.1"
+        db=session,
+        server_id=server_hypixel.id,
+        client_ip="192.168.0.1",
     )
     vote_service.add_vote(
-        db=session, server_id=server_hypixel.id, client_ip="192.168.0.2"
+        db=session,
+        server_id=server_hypixel.id,
+        client_ip="192.168.0.2",
     )
     vote_service.add_vote(
-        db=session, server_id=server_hypixel.id, client_ip="192.168.0.3"
+        db=session,
+        server_id=server_hypixel.id,
+        client_ip="192.168.0.3",
     )
 
-    servers, total_servers = server_service.get_servers(
+    servers_info: GetServersInfo = server_service.get_servers(
         db=session,
     )
+
+    servers = servers_info.servers
+    total_servers = servers_info.total_servers
 
     assert len(servers) == 2
     assert total_servers == 2
 
     # hypixel should be first as it has the most votes
-    assert servers[0][0].id == server_hypixel.id
+    assert servers[0].server.id == server_hypixel.id
 
 
 def test_get_servers_with_votes_monthly(
@@ -133,20 +160,23 @@ def test_get_servers_with_votes_monthly(
 ):
     """Tests getting servers with votes that are monthly"""
 
-    servers, total_servers = server_service.get_servers(
+    servers_info: GetServersInfo = server_service.get_servers(
         db=session,
     )
+
+    servers = servers_info.servers
+    total_servers = servers_info.total_servers
 
     assert len(servers) == 1
     assert total_servers == 1
 
-    colcraft_server = next(s for s in servers if s[0].id == server_colcraft.id)
+    colcraft_server = next(s for s in servers if s.server.id == server_colcraft.id)
 
     assert colcraft_server
     # total votes
-    assert colcraft_server[1] == 40
+    assert colcraft_server.total_votes == 40
     # votes this month
-    assert colcraft_server[2] == 20
+    assert colcraft_server.votes_this_month == 20
 
 
 def test_validate_banner_valid_gif(session):
@@ -302,14 +332,16 @@ def test_get_servers_pagination(session):
     per_page = 10
 
     for page in range(1, pages + 1):
-        servers, total_servers = server_service.get_servers(
+        get_servers_info: GetServersInfo = server_service.get_servers(
             db=session, page=page, page_size=per_page
         )
 
-        for i, server in enumerate(servers):
+        servers = get_servers_info.servers
+
+        for i, server_info in enumerate(servers):
             assert (
-                server[0].name
-                == f"My Server {total_servers - ((page - 1) * per_page + i)}"
+                server_info.server.name
+                == f"My Server {get_servers_info.total_servers - ((page - 1) * per_page + i)}"
             )
 
 
@@ -474,16 +506,19 @@ def test_delete_server_not_owned(
 def test_get_server(session, server_colcraft: Server):
     """Tests getting a server"""
 
-    server, total_votes, monthly_votes, rank = server_service.get_server(
-        db=session, server_id=server_colcraft.id
+    server_info: GetServerInfo = server_service.get_server(
+        db=session,
+        server_id=server_colcraft.id,
     )
+
+    server = server_info.server
 
     assert server
     assert server.id == server_colcraft.id
     assert server.name == server_colcraft.name
-    assert total_votes == 0
-    assert monthly_votes == 0
-    assert rank == 1
+    assert server_info.total_votes == 0
+    assert server_info.votes_this_month == 0
+    assert server_info.rank == 1
 
 
 def test_get_my_servers(
@@ -508,25 +543,32 @@ def test_get_my_servers(
     )
 
     # get all servers
-    servers = server_service.get_servers(
+    servers_info: GetServersInfo = server_service.get_servers(
         db=session,
-    )[0]
+    )
+
+    servers = servers_info.servers
 
     assert len(servers) == 3
 
     # get my servers
-    my_servers = server_service.get_my_servers(db=session, user_id=user_jack.id)
+    my_servers: list[GetServerInfo] = server_service.get_my_servers(
+        db=session,
+        user_id=user_jack.id,
+    )
 
     assert len(my_servers) == 2
 
     for s in my_servers:
-        assert s[0].id in [server_colcraft.id, server_2.id]
+        assert s.server.id in [server_colcraft.id, server_2.id]
 
     # get my servers for alan
-    my_servers = server_service.get_my_servers(db=session, user_id=user_alan.id)
+    my_servers: list[GetServerInfo] = server_service.get_my_servers(
+        db=session, user_id=user_alan.id
+    )
 
     for s in my_servers:
-        assert s[0].id in [server_hypixel.id]
+        assert s.server.id in [server_hypixel.id]
 
 
 def test_get_server_deleted(session, server_colcraft: Server):
@@ -550,9 +592,12 @@ def test_get_servers_deleted(
 ):
     """Tests getting servers that have been flagged for deletion"""
 
-    servers, total_servers = server_service.get_servers(
+    servers_info: GetServersInfo = server_service.get_servers(
         db=session,
     )
+
+    servers = servers_info.servers
+    total_servers = servers_info.total_servers
 
     assert len(servers) == 3
     assert total_servers == 3
@@ -569,14 +614,14 @@ def test_get_servers_deleted(
         user_id=server_hypixel.user_id,
     )
 
-    servers, total_servers = server_service.get_servers(
+    servers_info: GetServersInfo = server_service.get_servers(
         db=session,
     )
 
-    assert len(servers) == 1
-    assert total_servers == 1
+    assert len(servers_info.servers) == 1
+    assert servers_info.total_servers == 1
 
-    assert servers[0][0].id == server_colcraft_2.id
+    assert servers_info.servers[0].server.id == server_colcraft_2.id
 
 
 def test_get_my_servers_deleted(
@@ -586,7 +631,7 @@ def test_get_my_servers_deleted(
 ):
     """Tests getting my servers that have been flagged for deletion"""
 
-    my_servers = server_service.get_my_servers(
+    my_servers: list[GetServerInfo] = server_service.get_my_servers(
         db=session,
         user_id=server_colcraft.user_id,
     )
@@ -599,10 +644,82 @@ def test_get_my_servers_deleted(
         user_id=server_colcraft.user_id,
     )
 
-    my_servers = server_service.get_my_servers(
+    my_servers: list[GetServerInfo] = server_service.get_my_servers(
         db=session,
         user_id=server_colcraft.user_id,
     )
 
     assert len(my_servers) == 1
-    assert my_servers[0][0].id == server_colcraft_2.id
+    assert my_servers[0].server.id == server_colcraft_2.id
+
+
+def test_get_server_rank(
+    session,
+    server_colcraft: Server,
+    server_hypixel: Server,
+    server_colcraft_2: Server,
+):
+    """Tests getting a server rank"""
+
+    for i in range(1, 5):
+        vote_service.add_vote(
+            db=session,
+            server_id=server_colcraft.id,
+            client_ip=f"127.0.0.{i}",
+        )
+
+    for i in range(1, 3):
+        vote_service.add_vote(
+            db=session,
+            server_id=server_hypixel.id,
+            client_ip=f"127.0.0.{i}",
+        )
+
+    for i in range(1, 2):
+        vote_service.add_vote(
+            db=session,
+            server_id=server_colcraft_2.id,
+            client_ip=f"127.0.0.{i}",
+        )
+
+    colcraft_rank = server_service.get_server_rank(
+        db=session,
+        server=server_colcraft,
+    )
+
+    colcraft_2_rank = server_service.get_server_rank(
+        db=session,
+        server=server_colcraft_2,
+    )
+
+    hypixel_rank = server_service.get_server_rank(
+        db=session,
+        server=server_hypixel,
+    )
+
+    servers_info: GetServersInfo = server_service.get_servers(
+        db=session,
+    )
+
+    servers = servers_info.servers
+
+    assert colcraft_rank == 1
+    assert hypixel_rank == 2
+    assert colcraft_2_rank == 3
+
+    # assert the rank is the same from the get_servers response
+    assert colcraft_rank == servers[0].rank
+    assert hypixel_rank == servers[1].rank
+    assert colcraft_2_rank == servers[2].rank
+
+
+def test_get_server_history(
+    session,
+    server_colcraft: Server,
+    server_colcraft_history,
+):
+    """Tests getting a server's historical data"""
+
+    server_history = server_service.get_server_history(
+        db=session, server_id=server_colcraft.id
+    )

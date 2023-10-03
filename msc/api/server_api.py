@@ -15,7 +15,7 @@ from msc.dto.server_dto import (
     ServersGetOutputDto,
     ServersMineOutputDto,
     ServerUpdateInputDto,
-    ServerGetHistoryInputDto,
+    # ServerGetHistoryInputDto,
     ServerHistoryDto,
 )
 from msc.services import ping_service, server_service
@@ -105,7 +105,7 @@ def get_servers(
 ) -> ServersGetOutputDto:
     """Endpoint for getting all servers"""
 
-    servers_resp, total_servers = server_service.get_servers(
+    get_servers_info = server_service.get_servers(
         db=db,
         page=query_params.page,
         page_size=query_params.page_size,
@@ -113,8 +113,8 @@ def get_servers(
     )
 
     dto = ServersGetOutputDto(
-        total_servers=total_servers,
-        servers=[GetServerDto.from_service(s) for s in servers_resp],
+        total_servers=get_servers_info.total_servers,
+        servers=[GetServerDto.from_service(s) for s in get_servers_info.servers],
     )
 
     return dto
@@ -206,7 +206,7 @@ def ping_server(
 @router.get("/servers/{server_id}/historical")
 def get_server_historical_data(
     server_id: str,
-    query_params: ServerGetHistoryInputDto = Depends(),
+    # query_params: ServerGetHistoryInputDto = Depends(),
     db: Session = Depends(get_db),
 ) -> list[ServerHistoryDto]:
     """Endpoint for getting a server's historical data"""
@@ -214,11 +214,6 @@ def get_server_historical_data(
     server_history = server_service.get_server_history(
         db=db,
         server_id=UUID(server_id),
-        from_date=query_params.from_date,
-        to_date=query_params.to_date,
-        include_votes=query_params.include_votes,
-        include_players=query_params.include_players,
-        include_is_online=query_params.include_is_online,
     )
 
     return [ServerHistoryDto.from_service(s) for s in server_history]

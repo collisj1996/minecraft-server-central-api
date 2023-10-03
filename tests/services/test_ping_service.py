@@ -185,3 +185,25 @@ def test_can_create_another_data_point_after_ten_minutes(
         .count()
         == 2
     )
+
+
+def test_update_server_uptime(
+    session,
+    server_colcraft: Server,
+    server_colcraft_history,
+):
+    """Tests updating a server's uptime"""
+
+    assert server_colcraft.uptime == 100.0  # default value
+
+    ping_service._update_server_uptime(
+        db=session,
+        server=server_colcraft,
+    )
+
+    # get the server again from the database
+    server_colcraft = (
+        session.query(Server).filter(Server.id == server_colcraft.id).one_or_none()
+    )
+
+    assert server_colcraft.uptime == 95.65

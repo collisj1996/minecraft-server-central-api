@@ -2,7 +2,7 @@ import asyncio
 import base64
 import logging
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from socket import gaierror
 from typing import List, Optional
 from uuid import UUID
@@ -578,7 +578,8 @@ async def poll_server_async(
                     server=server,
                 )
     except Exception as e:
-        return
+        pass
+        logger.error(f"Unhandled error polling server: {e}")
 
 
 async def _poll_servers_aynsc_batch(db: Session, servers: List[Server]):
@@ -629,6 +630,75 @@ def poll_servers_async():
     )
 
 
+def update_servers_uptime():
+    # create a new db session for this job
+    db: Session = next(get_db())
+
+    logger.info("Updating servers uptime")
+
+    servers = []
+
+    # Get all servers
+    with _handle_db_errors():
+        servers = (
+            db.query(Server)
+            .filter(
+                Server.flagged_for_deletion == False,
+            )
+            .all()
+        )
+
+    for server in servers:
+        _update_server_uptime(
+            db=db,
+            server=server,
+        )
+
+    db.close()
+
+
+def _update_server_uptime(
+    db: Session,
+    server: Server,
+):
+    """Updates the server uptime from the past 30 days of data points"""
+
+    try:
+        # update the server uptime from the past 30 days of data points
+        online_data_points = (
+            db.query(ServerHistory)
+            .filter(
+                ServerHistory.server_id == server.id,
+                ServerHistory.created_at >= datetime.utcnow() - timedelta(days=30),
+                ServerHistory.is_online == True,
+            )
+            .count()
+        )
+
+        total_data_points = (
+            db.query(ServerHistory)
+            .filter(
+                ServerHistory.server_id == server.id,
+                ServerHistory.created_at >= datetime.utcnow() - timedelta(days=30),
+            )
+            .count()
+        )
+
+        if total_data_points == 0 or online_data_points == 0:
+            uptime = 0
+        else:
+            uptime = (online_data_points / total_data_points) * 100
+
+        server.uptime = round(uptime, 2)
+
+        with _handle_db_errors():
+            db.commit()
+
+    except Exception as e:
+        logger.error(f"Unhandled error updating server uptime: {e}")
+        pass
+
+
 def _create_server_history_data_point(
     db: Session,
     server: Server,
@@ -656,10 +726,24 @@ def _create_server_history_data_point(
         if (datetime.utcnow() - last_data_point.created_at).total_seconds() < 60:
             return
 
+    from msc.services.server_service import get_server_rank
+
+    rank = None
+    try:
+        rank = get_server_rank(
+            db=db,
+            server=server,
+        )
+    except Exception as e:
+        logger.error(f"Error getting server rank: {e}")
+        pass
+
     server_history = ServerHistory(
         server_id=server.id,
         is_online=is_online,
         players=players,
+        rank=rank,
+        uptime=server.uptime,
     )
 
     db.add(server_history)

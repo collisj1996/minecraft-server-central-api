@@ -4,10 +4,11 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from typing import List, Optional
 from uuid import UUID
+from dataclasses import dataclass
 
 import boto3
 from PIL import Image
-from sqlalchemy import and_, desc, func
+from sqlalchemy import and_, desc, func, cast, Integer, Float, case, extract
 from sqlalchemy.orm import Session
 
 from msc.dto.custom_types import NOT_SET
@@ -25,6 +26,31 @@ def _handle_db_errors():
     except Exception as e:
         # TODO: Raise a custom exception here
         raise e
+
+
+@dataclass
+class GetServerInfo:
+    server: Server
+    votes_this_month: int
+    total_votes: int
+    rank: int
+
+
+@dataclass
+class GetServersInfo:
+    servers: List[GetServerInfo]
+    total_servers: int
+
+
+@dataclass
+class ServerHistoryInfo:
+    date: datetime
+    rank: float
+    players: float
+    uptime: float
+    votes: int
+    votes_this_month: int
+    total_votes: int
 
 
 def get_servers(
@@ -96,7 +122,15 @@ def get_servers(
         .scalar()
     )
 
-    return servers_result, total_servers
+    return GetServersInfo(
+        servers=[
+            GetServerInfo(
+                server=s[0], votes_this_month=s[2], total_votes=s[1], rank=s[3]
+            )
+            for s in servers_result
+        ],
+        total_servers=total_servers,
+    )
 
 
 def get_server(
@@ -129,12 +163,6 @@ def get_server(
             Server,
             func.count(Vote.id).label("total_votes"),
             func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
-            func.rank()
-            .over(
-                order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
-                partition_by=None,
-            )
-            .label("rank"),
         )
         .outerjoin(Vote, Server.id == Vote.server_id)
         .outerjoin(subquery, Server.id == subquery.c.server_id)
@@ -149,7 +177,14 @@ def get_server(
     if not server_and_votes:
         raise NotFound("Server not found")
 
-    return server_and_votes
+    rank = get_server_rank(db=db, server=server_and_votes[0])
+
+    return GetServerInfo(
+        server=server_and_votes[0],
+        votes_this_month=server_and_votes[2],
+        total_votes=server_and_votes[1],
+        rank=rank,
+    )
 
 
 def get_my_servers(
@@ -184,29 +219,41 @@ def get_my_servers(
             Server,
             func.count(Vote.id).label("total_votes"),
             func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
-            func.rank()
-            .over(
-                order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
-                partition_by=None,
-            )
-            .label("rank"),
         )
-        .outerjoin(Vote, Server.id == Vote.server_id)
-        .outerjoin(subquery, Server.id == subquery.c.server_id)
+        .outerjoin(
+            Vote,
+            Server.id == Vote.server_id,
+        )
+        .outerjoin(
+            subquery,
+            Server.id == subquery.c.server_id,
+        )
         .filter(
             Server.user_id == user_id,
             Server.flagged_for_deletion == False,
         )
-        .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
+        .group_by(
+            Server.id,
+            subquery.c.votes_this_month_sub,
+            Server.created_at,
+        )
         .order_by(
             desc("votes_this_month"),
             Server.created_at.desc(),
         )
     )
 
-    servers_result = servers_query.all()
+    my_servers_result = servers_query.all()
 
-    return servers_result
+    return [
+        GetServerInfo(
+            server=my_server[0],
+            votes_this_month=my_server[2],
+            total_votes=my_server[1],
+            rank=get_server_rank(db=db, server=my_server[0]),
+        )
+        for my_server in my_servers_result
+    ]
 
 
 def _validate_banner(image_data: BytesIO) -> Image.Image:
@@ -396,7 +443,7 @@ def create_server(
     video_url: Optional[str] = None,
     web_store: Optional[str] = None,
     owner_name: Optional[str] = None,
-):
+) -> Server:
     """Creates a server"""
 
     user_servers = (
@@ -475,7 +522,7 @@ def delete_server(
     db: Session,
     user_id: UUID,
     server_id: UUID,
-):
+) -> UUID:
     """Deletes a server"""
 
     server = (
@@ -504,11 +551,6 @@ def delete_server(
 def get_server_history(
     db: Session,
     server_id: UUID,
-    from_date: datetime = None,
-    to_date: datetime = None,
-    include_votes: Optional[bool] = None,
-    include_players: Optional[bool] = None,
-    include_is_online: Optional[bool] = None,
 ) -> List[ServerHistory]:
     """Returns a server's historical data"""
 
@@ -525,29 +567,123 @@ def get_server_history(
         raise NotFound("Server not found")
 
     now = datetime.now()
-
-    if not from_date:
-        from_date = now - timedelta(days=30)
-
-    if not to_date:
-        to_date = now
+    from_date = now - timedelta(days=30)
+    to_date = now
 
     # get base server history data
+    # TODO: Add rigourous testing for this
     server_history = (
-        db.query(ServerHistory)
+        db.query(
+            func.DATE_TRUNC("hour", ServerHistory.created_at).label("date"),
+            cast(func.avg(ServerHistory.rank), Integer).label("rank"),
+            cast(func.avg(ServerHistory.players), Integer).label("players"),
+            cast(func.avg(ServerHistory.uptime), Float).label("uptime"),
+            func.count(Vote.id).label("votes"),
+            func.count(
+                case(
+                    (extract("year", Vote.created_at) == extract("year", func.now()))
+                    & (
+                        extract("month", Vote.created_at)
+                        == extract("month", func.now())
+                    ),
+                    value=True,
+                )
+            ).label("votes_this_month"),
+            func.count(Vote.id).label("total_votes"),
+        )
+        .outerjoin(
+            Vote,
+            and_(
+                Vote.server_id == ServerHistory.server_id,
+                Vote.created_at >= from_date,
+                Vote.created_at <= to_date,
+            ),
+        )
         .filter(
             ServerHistory.server_id == server_id,
             ServerHistory.created_at >= from_date,
             ServerHistory.created_at <= to_date,
         )
-        .order_by(
-            ServerHistory.created_at.desc(),
-        )
+        .group_by("date")
+        .order_by("date")
         .all()
     )
 
-    # TODO: Get vote history data
+    server_history_infos = [
+        ServerHistoryInfo(
+            date=s[0],
+            rank=s[1],
+            players=s[2],
+            uptime=s[3],
+            votes=s[4],
+            votes_this_month=s[5],
+            total_votes=s[6],
+        )
+        for s in server_history
+    ]
 
-    # TODO: Incorporate data from server history old
+    return server_history_infos
 
-    return server_history
+
+def get_server_rank(
+    db: Session,
+    server: Server,
+) -> int:
+    """Gets a server's computed rank
+
+    Mainly for internal use"""
+
+    # Get the current month and year
+    now = datetime.now()
+    month = now.month
+    year = now.year
+
+    vote_subquery = (
+        db.query(
+            Vote.server_id,
+            func.count(Vote.id).label("votes_this_month_sub"),
+        )
+        .filter(
+            and_(
+                func.extract("month", Vote.created_at) == month,
+                func.extract("year", Vote.created_at) == year,
+            )
+        )
+        .group_by(Vote.server_id)
+        .subquery()
+    )
+
+    server_rank_subquery = (
+        db.query(
+            Server.id,
+            func.rank()
+            .over(
+                order_by=vote_subquery.c.votes_this_month_sub.desc().nulls_last(),
+                partition_by=None,
+            )
+            .label("rank"),
+        )
+        .outerjoin(
+            vote_subquery,
+            Server.id == vote_subquery.c.server_id,
+        )
+        .filter(
+            Server.flagged_for_deletion == False,
+        )
+        .group_by(
+            Server.id,
+            vote_subquery.c.votes_this_month_sub,
+            Server.created_at,
+        )
+        .subquery()
+    )
+
+    rank = (
+        db.query(server_rank_subquery.c.rank)
+        .filter(
+            server_rank_subquery.c.id == server.id,
+        )
+        .scalar()
+    )
+
+    return rank

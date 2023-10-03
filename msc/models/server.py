@@ -56,6 +56,7 @@ class Server(db.Base):
     flagged_for_deletion = Column(Boolean, nullable=False)
     flagged_for_deletion_at = Column(DateTime, nullable=True)
     uptime = Column(Float, nullable=False)
+    # search_index = Column(Text, nullable=False)
 
     gameplay = relationship("ServerGameplay", backref="server")
 

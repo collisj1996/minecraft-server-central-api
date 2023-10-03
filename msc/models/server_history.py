@@ -24,7 +24,9 @@ class ServerHistory(db.Base):
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid4)
     server_id = Column(UUID(as_uuid=True), nullable=False)
     is_online = Column(Boolean, nullable=False)
+    uptime = Column(Integer, nullable=False)
     players = Column(Integer, nullable=False)
+    rank = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False)
 
     __table_args__ = (
@@ -44,8 +46,13 @@ class ServerHistory(db.Base):
         server_id: UUID,
         is_online: bool,
         players: int,
+        rank: int,
+        uptime: int,
     ):
         self.server_id = server_id
         self.is_online = is_online
         self.players = players
+        self.rank = rank
+        self.uptime = uptime
+
         self.created_at = datetime.utcnow()

@@ -91,20 +91,24 @@ class ServerDto(BaseDto):
 
 
 class ServerHistoryDto(BaseDto):
-    is_online: Optional[bool]
-    players: Optional[int]
-    votes_this_month: Optional[int]
-    votes_total: Optional[int]
-    created_at: DateTimeUTC
+    date: DateTimeUTC
+    players: int
+    uptime: float
+    rank: int
+    votes: int
+    votes_this_month: int
+    total_votes: int
 
     @classmethod
-    def from_service(cls, server_history: ServerHistory):
+    def from_service(cls, server_history: server_service.ServerHistoryInfo):
         return cls(
-            is_online=server_history.is_online,
+            date=server_history.date,
             players=server_history.players,
-            votes_this_month=None,
-            votes_total=None,
-            created_at=server_history.created_at,
+            uptime=server_history.uptime,
+            rank=server_history.rank,
+            votes=server_history.votes,
+            votes_this_month=server_history.votes_this_month,
+            total_votes=server_history.total_votes,
         )
 
 
@@ -120,37 +124,41 @@ class GetServerDto(ServerDto):
     votes_this_month: int
 
     @classmethod
-    def from_service(cls, service_output):
+    def from_service(
+        cls,
+        server_info: server_service.GetServerInfo,
+    ):
         return cls(
-            id=service_output[0].id,
-            name=service_output[0].name,
-            description=service_output[0].description,
-            java_ip_address=service_output[0].java_ip_address,
-            bedrock_ip_address=service_output[0].bedrock_ip_address,
-            java_port=service_output[0].java_port,
-            bedrock_port=service_output[0].bedrock_port,
-            players=service_output[0].players,
-            max_players=service_output[0].max_players,
-            is_online=service_output[0].is_online,
-            country_code=service_output[0].country_code,
-            minecraft_version=service_output[0].minecraft_version,
-            votifier_ip_address=service_output[0].votifier_ip_address,
-            votifier_port=service_output[0].votifier_port,
-            votifier_key=service_output[0].votifier_key,
-            website=service_output[0].website,
-            discord=service_output[0].discord,
-            banner_url=_get_server_banner_url(service_output[0]),
-            icon_url=_get_server_icon_url(service_output[0]),
-            gameplay=[g.name for g in service_output[0].gameplay],
-            created_at=service_output[0].created_at,
-            updated_at=service_output[0].updated_at,
-            last_pinged_at=service_output[0].last_pinged_at,
-            rank=service_output[3],
-            total_votes=service_output[1],
-            votes_this_month=service_output[2],
-            owner_name=service_output[0].owner_name,
-            web_store=service_output[0].web_store,
-            video_url=service_output[0].video_url,
+            id=server_info.server.id,
+            name=server_info.server.name,
+            description=server_info.server.description,
+            java_ip_address=server_info.server.java_ip_address,
+            bedrock_ip_address=server_info.server.bedrock_ip_address,
+            java_port=server_info.server.java_port,
+            bedrock_port=server_info.server.bedrock_port,
+            players=server_info.server.players,
+            max_players=server_info.server.max_players,
+            is_online=server_info.server.is_online,
+            country_code=server_info.server.country_code,
+            minecraft_version=server_info.server.minecraft_version,
+            votifier_ip_address=server_info.server.votifier_ip_address,
+            votifier_port=server_info.server.votifier_port,
+            votifier_key=server_info.server.votifier_key,
+            website=server_info.server.website,
+            discord=server_info.server.discord,
+            banner_url=_get_server_banner_url(server_info.server),
+            icon_url=_get_server_icon_url(server_info.server),
+            gameplay=[g.name for g in server_info.server.gameplay],
+            created_at=server_info.server.created_at,
+            updated_at=server_info.server.updated_at,
+            last_pinged_at=server_info.server.last_pinged_at,
+            rank=server_info.rank,
+            total_votes=server_info.total_votes,
+            votes_this_month=server_info.votes_this_month,
+            owner_name=server_info.server.owner_name,
+            web_store=server_info.server.web_store,
+            video_url=server_info.server.video_url,
+            uptime=server_info.server.uptime,
         )
 
 
@@ -251,24 +259,24 @@ class ServerPingOutputDto(BaseDto):
     message: str
 
 
-class ServerGetHistoryInputDto(BaseDto):
-    from_date: Optional[DateTimeIsoStr] = None
-    to_date: Optional[DateTimeIsoStr] = None
-    include_players: Optional[bool] = True
-    include_is_online: Optional[bool] = True
-    include_votes: Optional[bool] = False
+# class ServerGetHistoryInputDto(BaseDto):
+#     from_date: Optional[DateTimeIsoStr] = None
+#     to_date: Optional[DateTimeIsoStr] = None
+#     include_players: Optional[bool] = True
+#     include_is_online: Optional[bool] = True
+#     include_votes: Optional[bool] = False
 
-    # validate that at least one of the include_* fields is set
-    # TODO: Add test for this
-    @validator("include_votes")
-    def validate_include(cls, include_votes, values):
-        if (
-            not values["include_players"]
-            and not values["include_is_online"]
-            and not include_votes
-        ):
-            raise ValueError(
-                "At least one of include_players, include_is_online or include_votes must be set"
-            )
+#     # validate that at least one of the include_* fields is set
+#     # TODO: Add test for this
+#     @validator("include_votes")
+#     def validate_include(cls, include_votes, values):
+#         if (
+#             not values["include_players"]
+#             and not values["include_is_online"]
+#             and not include_votes
+#         ):
+#             raise ValueError(
+#                 "At least one of include_players, include_is_online or include_votes must be set"
+#             )
 
-        return include_votes
+#         return include_votes

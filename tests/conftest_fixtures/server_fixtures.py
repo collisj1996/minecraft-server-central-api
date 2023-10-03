@@ -1,8 +1,10 @@
 from uuid import uuid4
 
 import pytest
+import freezegun
+from datetime import datetime, timedelta
 
-from msc.models import User
+from msc.models import User, ServerHistory, Server
 from msc.services import server_service, user_service
 
 
@@ -166,3 +168,34 @@ def many_servers(session):
         output["users_map"][user.id] = user
 
     return output
+
+
+@pytest.fixture
+def server_colcraft_history(
+    session,
+    server_colcraft: Server,
+):
+    """Creates a set of historical data points for the server colcraft
+
+    5 days one data point per hour"""
+
+    for days in range(1, 5):
+        for hours in range(1, 24):
+            with freezegun.freeze_time(
+                datetime.utcnow() - timedelta(days=days, hours=hours)
+            ):
+                is_online = hours % 12 != 0
+                players = days * (hours % 5)
+                rank = days % 5
+                uptime = 100 - days
+
+                data_point = ServerHistory(
+                    server_id=server_colcraft.id,
+                    is_online=is_online,
+                    players=players,
+                    rank=rank,
+                    uptime=uptime,
+                )
+
+                session.add(data_point)
+    session.commit()
