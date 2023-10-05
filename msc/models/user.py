@@ -3,10 +3,10 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 
-from msc import db
+from msc.database import Base
 
 
-class User(db.Base):
+class User(Base):
     """
     Represents a user
     """

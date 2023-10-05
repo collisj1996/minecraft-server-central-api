@@ -1,6 +1,5 @@
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy.pool import NullPool
 
 from msc.config import config
 
@@ -32,26 +31,3 @@ def get_db():
         raise
     finally:
         db.close()
-
-
-class Database:
-    def __init__(self):
-        # TODO: Remove this
-
-        # Engine - connection to the database
-        # NullPool ensures that connections are closed after use
-        self.engine = create_engine(get_url(), poolclass=NullPool)
-
-        self.Session = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-        self.renew_session()
-
-        self.Base = declarative_base()
-        self.Base.metadata.bind = self.engine
-
-    def renew_session(self):
-        # This will abandon the previous session and create a new one
-        self.session = self.Session()
-
-    def end_session(self):
-        # This will close the current session
-        self.session.close()

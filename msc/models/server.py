@@ -18,12 +18,13 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID, TSVECTOR
 from sqlalchemy.orm import relationship
 
-from msc import db
+from msc.database import Base
+
 
 INDEX_REMOVE_CHARS = "_"
 
 
-class Server(db.Base):
+class Server(Base):
     """
     Represents a server listing
     """

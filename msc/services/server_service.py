@@ -158,10 +158,7 @@ def get_servers(
         )
     )
 
-    # Add pagination
-    servers_query = servers_query.limit(page_size).offset((page - 1) * page_size)
-
-    servers_result = servers_query.all()
+    servers_result = servers_query.limit(page_size).offset((page - 1) * page_size).all()
 
     # get total number of servers
     # This needs to reflect the total number of servers in the query
