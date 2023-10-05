@@ -745,3 +745,27 @@ def test_get_server_history_by_day(
 
     # TODO: Finish this test
     print(1)
+
+
+def test_servers_search_query(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+):
+    """Tests the servers search query"""
+
+    get_servers_no_search = server_service.get_servers(
+        db=session,
+    )
+
+    assert len(get_servers_no_search.servers) == 3
+    assert get_servers_no_search.total_servers == 3
+
+    get_servers_search = server_service.get_servers(
+        db=session,
+        search_query="colcraft",
+    )
+
+    assert len(get_servers_search.servers) == 2
+    assert get_servers_search.total_servers == 2

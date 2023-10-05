@@ -109,7 +109,8 @@ def get_servers(
         db=db,
         page=query_params.page,
         page_size=query_params.page_size,
-        filter=query_params.filter,
+        search_query=query_params.search_query,
+        country_code=query_params.country_code,
     )
 
     dto = ServersGetOutputDto(

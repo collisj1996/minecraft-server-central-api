@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
+import re
 
 from sqlalchemy import (
     Boolean,
@@ -12,11 +13,14 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Float,
+    func,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, TSVECTOR
 from sqlalchemy.orm import relationship
 
 from msc import db
+
+INDEX_REMOVE_CHARS = "_"
 
 
 class Server(db.Base):
@@ -56,7 +60,7 @@ class Server(db.Base):
     flagged_for_deletion = Column(Boolean, nullable=False)
     flagged_for_deletion_at = Column(DateTime, nullable=True)
     uptime = Column(Float, nullable=False)
-    # search_index = Column(Text, nullable=False)
+    search_index = Column(TSVECTOR(), nullable=False)
 
     gameplay = relationship("ServerGameplay", backref="server")
 
@@ -126,3 +130,21 @@ class Server(db.Base):
         current_datetime = datetime.utcnow()
         self.created_at = current_datetime
         self.updated_at = current_datetime
+        self.update_search_index()
+
+    def update_search_index(self):
+        """
+        Updates the search index for this server
+        """
+
+        tsvector = (
+            f"{self.name if self.name else ''} "
+            f"{self.description if self.description else ''} "
+        )
+
+        tsvector = re.sub("|".join(INDEX_REMOVE_CHARS), "", tsvector)
+
+        self.search_index = func.to_tsvector(
+            "english",
+            tsvector,
+        )

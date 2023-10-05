@@ -5,15 +5,28 @@ from io import BytesIO
 from typing import List, Optional
 from uuid import UUID
 from dataclasses import dataclass
+import re
 
 import boto3
 from PIL import Image
-from sqlalchemy import and_, desc, func, cast, Integer, Float, case, extract
+from sqlalchemy import (
+    and_,
+    desc,
+    func,
+    cast,
+    Integer,
+    Float,
+    case,
+    extract,
+    Text,
+    Numeric,
+)
 from sqlalchemy.orm import Session
 
 from msc.dto.custom_types import NOT_SET
 from msc.errors import BadRequest, NotFound
 from msc.models import Server, ServerGameplay, Vote, ServerHistory, ServerHistoryOld
+from msc.models.server import INDEX_REMOVE_CHARS
 from msc.services import ping_service
 from msc.utils.file_utils import _get_checksum
 
@@ -57,11 +70,46 @@ def get_servers(
     db: Session,
     page: int = 1,
     page_size: int = 10,
-    filter: Optional[str] = None,
+    search_query: Optional[str] = None,
+    country_code: Optional[str] = None,  # TODO: Add tests for this
+    tags: Optional[List[str]] = None,  # TODO: Add tests for this
 ):
     """Returns all servers"""
 
-    # TODO: Add filtering
+    if search_query is not None:
+        search_query = re.sub("|".join(INDEX_REMOVE_CHARS), "", search_query)
+
+    ts_search_query = (
+        func.to_tsquery(
+            "english",
+            cast(func.websearch_to_tsquery("simple", search_query), Text).op("||")(
+                ":*"
+            ),
+        )
+        if search_query
+        else None
+    )
+
+    # distance: 1 - similarity to search query
+    distance = (
+        cast(1 - func.ts_rank_cd(Server.search_index, ts_search_query), Numeric)
+        if search_query
+        else None
+    )
+
+    filter_queries = []
+    order_by = []
+
+    if search_query:
+        filter_queries.append(Server.search_index.op("@@")(ts_search_query))
+        order_by.append(distance)
+
+    if country_code:
+        filter_queries.append(Server.country_code == country_code)
+
+    if tags:
+        # TODO:
+        pass
 
     # Get the current month and year
     now = datetime.now()
@@ -98,11 +146,15 @@ def get_servers(
         )
         .outerjoin(Vote, Server.id == Vote.server_id)
         .outerjoin(subquery, Server.id == subquery.c.server_id)
-        .filter(Server.flagged_for_deletion == False)
+        .filter(
+            Server.flagged_for_deletion == False,
+            *filter_queries,
+        )
         .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
         .order_by(
             desc("votes_this_month"),
             Server.created_at.desc(),
+            *order_by,
         )
     )
 
@@ -112,15 +164,9 @@ def get_servers(
     servers_result = servers_query.all()
 
     # get total number of servers
-    total_servers = (
-        db.query(
-            func.count(Server.id),
-        )
-        .filter(
-            Server.flagged_for_deletion == False,
-        )
-        .scalar()
-    )
+    # This needs to reflect the total number of servers in the query
+    # TODO: Always test this
+    total_servers = servers_query.count()
 
     return GetServersInfo(
         servers=[

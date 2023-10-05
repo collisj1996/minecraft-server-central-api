@@ -115,7 +115,9 @@ class ServerHistoryDto(BaseDto):
 class ServersGetInputDto(BaseDto):
     page: Optional[conint(ge=1)] = 1
     page_size: Optional[conint(ge=10, le=30)] = 10
-    filter: Optional[str] = None
+    search_query: Optional[str] = None
+    country_code: Optional[str] = None
+    # tags: Optional[conlist(str, min_items=1, max_items=5)] = None
 
 
 class GetServerDto(ServerDto):

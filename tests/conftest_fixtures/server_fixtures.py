@@ -17,9 +17,9 @@ def server_colcraft(session, user_jack: User):
 
     server = server_service.create_server(
         db=session,
-        name="My Server",
+        name="Colcraft server",
         user_id=user_jack.id,
-        description="My Server Description",
+        description="Here is a decription with lots of useful,info we can search upon this",
         java_ip_address="192.168.1.100",
         java_port=8080,
         country_code="GB",
@@ -45,9 +45,9 @@ def server_colcraft_2(session, user_jack: User):
 
     server = server_service.create_server(
         db=session,
-        name="My Server 2",
+        name="my second server",
         user_id=user_jack.id,
-        description="My Server Description 2",
+        description="This is colcrafts second server",
         java_ip_address="192.168.1.100",
         java_port=8080,
         country_code="GB",
