@@ -5,8 +5,8 @@ from pydantic import conint, conlist, validator, constr, root_validator
 
 from msc.constants import ALLOWED_GAMEPLAY, CDN_DOMAIN
 from msc.dto.base import BaseDto
-from msc.dto.custom_types import NOT_SET, DateTimeUTC, DateTimeIsoStr
-from msc.models import Server, ServerHistory
+from msc.dto.custom_types import NOT_SET, DateTimeUTC
+from msc.models import Server
 from msc.services import server_service
 
 
@@ -41,6 +41,7 @@ class ServerDto(BaseDto):
     is_online: bool
     country_code: str
     minecraft_version: Optional[str]
+    use_votifier: bool
     votifier_ip_address: Optional[str]
     votifier_port: Optional[int]
     votifier_key: Optional[str]
@@ -72,6 +73,7 @@ class ServerDto(BaseDto):
             is_online=server.is_online,
             country_code=server.country_code,
             minecraft_version=server.minecraft_version,
+            use_votifier=server.use_votifier,
             votifier_ip_address=server.votifier_ip_address,
             votifier_port=server.votifier_port,
             votifier_key=server.votifier_key,
@@ -143,6 +145,7 @@ class GetServerDto(ServerDto):
             is_online=server_info.server.is_online,
             country_code=server_info.server.country_code,
             minecraft_version=server_info.server.minecraft_version,
+            use_votifier=server_info.server.use_votifier,
             votifier_ip_address=server_info.server.votifier_ip_address,
             votifier_port=server_info.server.votifier_port,
             votifier_key=server_info.server.votifier_key,
