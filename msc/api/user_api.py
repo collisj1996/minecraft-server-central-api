@@ -17,7 +17,7 @@ def add_user(
 ):
     """Endpoint for creating a user"""
 
-    # TODO: Add auth check
+    # TODO: Make this endpoint only triggerable by Step Function OR SNS
 
     user = user_service.add_user(
         db=db,

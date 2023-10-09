@@ -43,7 +43,8 @@ class Server(Base):
     max_players = Column(Integer, nullable=False)
     is_online = Column(Boolean, nullable=False, default=False)
     country_code = Column(Text, nullable=False)
-    minecraft_version = Column(Text, nullable=False)
+    minecraft_version = Column(Text, nullable=True)
+    use_votifier = Column(Boolean, nullable=False)
     votifier_ip_address = Column(Text, nullable=True)
     votifier_port = Column(Integer, nullable=True)
     votifier_key = Column(Text, nullable=True)
@@ -75,7 +76,6 @@ class Server(Base):
             ["user.id"],
             ondelete="CASCADE",
         ),
-        # check constraint to ensure that at least one of java_ip_address or bedrock_ip_address is not null
         CheckConstraint(
             "java_ip_address IS NOT NULL OR bedrock_ip_address IS NOT NULL",
             name="check_ip_address",
@@ -88,11 +88,12 @@ class Server(Base):
         name: str,
         description: str,
         country_code: str,
-        minecraft_version: str,
+        minecraft_version: Optional[str] = None,
         java_ip_address: Optional[str] = None,
         bedrock_ip_address: Optional[str] = None,
         java_port: Optional[int] = None,
         bedrock_port: Optional[int] = None,
+        use_votifier: Optional[bool] = False,
         votifier_ip_address: Optional[str] = None,
         votifier_port: Optional[int] = None,
         votifier_key: Optional[str] = None,
@@ -127,6 +128,7 @@ class Server(Base):
         self.web_store = web_store
         self.flagged_for_deletion = False
         self.uptime = 100.0
+        self.use_votifier = use_votifier
 
         current_datetime = datetime.utcnow()
         self.created_at = current_datetime

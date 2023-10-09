@@ -358,9 +358,9 @@ def update_server(
     java_port: Optional[int] = NOT_SET,
     bedrock_port: Optional[int] = NOT_SET,
     country_code: Optional[str] = NOT_SET,
-    minecraft_version: Optional[str] = NOT_SET,
     banner_base64: Optional[str] = NOT_SET,
     description: Optional[str] = NOT_SET,
+    use_votifier: Optional[bool] = NOT_SET,
     votifier_ip_address: Optional[str] = NOT_SET,
     votifier_port: Optional[int] = NOT_SET,
     votifier_key: Optional[str] = NOT_SET,
@@ -400,8 +400,6 @@ def update_server(
         server.bedrock_port = bedrock_port
     if country_code != NOT_SET:
         server.country_code = country_code
-    if minecraft_version != NOT_SET:
-        server.minecraft_version = minecraft_version
 
     if banner_base64 != NOT_SET:
         if banner_base64 is None:
@@ -418,6 +416,8 @@ def update_server(
 
     if description != NOT_SET:
         server.description = description
+    if use_votifier != NOT_SET:
+        server.use_votifier = use_votifier
     if votifier_ip_address != NOT_SET:
         server.votifier_ip_address = votifier_ip_address
     if votifier_port != NOT_SET:
@@ -470,7 +470,6 @@ def create_server(
     name: str,
     user_id: UUID,
     country_code: str,
-    minecraft_version: str,
     gameplay: List[str],
     java_ip_address: Optional[str] = None,
     bedrock_ip_address: Optional[str] = None,
@@ -478,6 +477,7 @@ def create_server(
     bedrock_port: Optional[int] = None,
     banner_base64: Optional[str] = None,
     description: Optional[str] = None,
+    use_votifier: Optional[bool] = False,
     votifier_ip_address: Optional[str] = None,
     votifier_port: Optional[int] = None,
     votifier_key: Optional[str] = None,
@@ -513,7 +513,7 @@ def create_server(
         java_port=java_port,
         bedrock_port=bedrock_port,
         country_code=country_code,
-        minecraft_version=minecraft_version,
+        use_votifier=use_votifier,
         votifier_ip_address=votifier_ip_address,
         votifier_port=votifier_port,
         votifier_key=votifier_key,

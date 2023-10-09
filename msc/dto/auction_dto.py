@@ -9,7 +9,7 @@ from msc.constants import (
     MAX_AUCTIONS_PAGE_SIZE,
 )
 from msc.dto.base import BaseDto
-from msc.dto.custom_types import DateTimeIsoStr, DateTimeUTC
+from msc.dto.custom_types import DateTimeUTC
 from msc.models import Auction, AuctionBid
 from msc.services.auction_service import GetAuctionInfo
 

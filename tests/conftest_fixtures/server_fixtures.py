@@ -23,7 +23,6 @@ def server_colcraft(session, user_jack: User):
         java_ip_address="192.168.1.100",
         java_port=8080,
         country_code="GB",
-        minecraft_version="1.16.5",
         votifier_ip_address=None,
         votifier_port=None,
         votifier_key=None,
@@ -51,7 +50,6 @@ def server_colcraft_2(session, user_jack: User):
         java_ip_address="192.168.1.100",
         java_port=8080,
         country_code="GB",
-        minecraft_version="1.16.5",
         votifier_ip_address=None,
         votifier_port=None,
         votifier_key=None,
@@ -79,7 +77,6 @@ def server_hypixel(session, user_alan: User):
         java_ip_address="192.168.1.100",
         java_port=8080,
         country_code="GB",
-        minecraft_version="1.16.5",
         votifier_ip_address=None,
         votifier_port=None,
         votifier_key=None,
@@ -119,7 +116,6 @@ def ten_servers(session):
             java_ip_address=f"{i}.168.1.100",
             java_port=8080,
             country_code="GB",
-            minecraft_version="1.16.5",
             gameplay=["Survival", "Creative", "Skyblock"],
         )
 
@@ -158,7 +154,6 @@ def many_servers(session):
             java_ip_address=f"{i}.168.1.100",
             java_port=8080,
             country_code="GB",
-            minecraft_version="1.16.5",
             gameplay=["Survival", "Creative", "Skyblock"],
         )
 

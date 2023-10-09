@@ -206,6 +206,7 @@ def poll_bedrock_server(
         server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
+        server.minecraft_version = status.version.name
 
     except TimeoutError as e:
         pass
@@ -265,6 +266,7 @@ def poll_java_server(
         server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
+        server.minecraft_version = status.version.name
 
         if status.icon:
             checksum = _get_checksum(status.icon)
@@ -317,6 +319,7 @@ def poll_java_server(
         server.players = players
         server.max_players = query.players.max
         server.last_pinged_at = datetime.utcnow()
+        server.minecraft_version = query.software.version
 
     except TimeoutError as timeout_error:
         pass
@@ -367,6 +370,7 @@ async def poll_bedrock_server_async(
         server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
+        server.minecraft_version = status.version.name
 
     except TimeoutError as e:
         pass
@@ -418,6 +422,7 @@ async def poll_java_server_async(
         server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
+        server.minecraft_version = status.version.name
 
         if status.icon:
             checksum = _get_checksum(status.icon)
@@ -469,6 +474,7 @@ async def poll_java_server_async(
         server.players = query.players.online
         server.max_players = query.players.max
         server.last_pinged_at = datetime.utcnow()
+        server.minecraft_version = query.software.version
 
     except TimeoutError as timeout_error:
         pass
