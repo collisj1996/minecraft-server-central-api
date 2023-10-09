@@ -217,7 +217,6 @@ def test_create_server(
         java_ip_address="192.168.1.100",
         java_port=8080,
         country_code="GB",
-        minecraft_version="1.16.5",
         votifier_ip_address=None,
         votifier_port=None,
         votifier_key=None,
@@ -251,7 +250,6 @@ def test_10_servers_per_user(
             java_ip_address=f"1.2.3.{i}",
             java_port=8080,
             country_code="GB",
-            minecraft_version="1.16.5",
             votifier_ip_address=None,
             votifier_port=None,
             votifier_key=None,
@@ -269,7 +267,6 @@ def test_10_servers_per_user(
             java_ip_address="192.168.1.100",
             java_port=8080,
             country_code="GB",
-            minecraft_version="1.16.5",
             votifier_ip_address=None,
             votifier_port=None,
             votifier_key=None,
@@ -302,7 +299,6 @@ def _create_multiple_servers_for_pagination(session):
             java_ip_address=f"1.2.3.{i}",
             java_port=8080,
             country_code="GB",
-            minecraft_version="1.16.5",
             votifier_ip_address=None,
             votifier_port=None,
             votifier_key=None,
@@ -361,7 +357,6 @@ def test_update_server_all_properties(
         java_ip_address="0.0.0.0",
         java_port=9999,
         country_code="FR",
-        minecraft_version="9.9.9",
         votifier_ip_address="0.0.0.0",
         votifier_port=9999,
         votifier_key="UPDATED KEY",
@@ -377,7 +372,6 @@ def test_update_server_all_properties(
     assert updated_server.java_ip_address == "0.0.0.0"
     assert updated_server.java_port == 9999
     assert updated_server.country_code == "FR"
-    assert updated_server.minecraft_version == "9.9.9"
     assert updated_server.votifier_ip_address == "0.0.0.0"
     assert updated_server.votifier_port == 9999
     assert updated_server.votifier_key == "UPDATED KEY"
@@ -409,7 +403,6 @@ def test_update_server_some_properties(
         java_ip_address="0.0.0.0",
         java_port=1234,
         country_code="GB",
-        minecraft_version="1.16.5",
         votifier_ip_address=None,
         votifier_port=None,
         votifier_key=None,
@@ -433,7 +426,6 @@ def test_update_server_some_properties(
     assert updated_server.java_ip_address == "0.0.0.0"
     assert updated_server.java_port == 1234
     assert updated_server.country_code == "GB"
-    assert updated_server.minecraft_version == "1.16.5"
     assert updated_server.votifier_ip_address is None
     assert updated_server.votifier_port is None
     assert updated_server.votifier_key is None
@@ -539,7 +531,6 @@ def test_get_my_servers(
         java_ip_address="1.2.3.4",
         gameplay=["Survival", "Creative", "Skyblock"],
         country_code="GB",
-        minecraft_version="1.16.5",
     )
 
     # get all servers

@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import conint, conlist, validator
+from pydantic import conint, conlist, validator, constr, root_validator
 
 from msc.constants import ALLOWED_GAMEPLAY, CDN_DOMAIN
 from msc.dto.base import BaseDto
@@ -40,7 +40,7 @@ class ServerDto(BaseDto):
     max_players: int
     is_online: bool
     country_code: str
-    minecraft_version: str
+    minecraft_version: Optional[str]
     votifier_ip_address: Optional[str]
     votifier_port: Optional[int]
     votifier_key: Optional[str]
@@ -174,34 +174,33 @@ class ServersMineOutputDto(BaseDto):
 
 
 class ServerCreateInputDto(BaseDto):
-    name: str
-    description: Optional[str] = None
-    java_ip_address: Optional[str] = None
-    bedrock_ip_address: Optional[str] = None
-    java_port: Optional[int] = None
-    bedrock_port: Optional[int] = None
-    country_code: str
-    minecraft_version: str
-    votifier_ip_address: Optional[str] = None
-    votifier_port: Optional[int] = None
-    votifier_key: Optional[str] = None
-    website: Optional[str] = None
-    discord: Optional[str] = None
-    banner_base64: Optional[str] = None
+    name: constr(min_length=5, max_length=65)
+    description: constr(min_length=150, max_length=1500)
+    java_ip_address: Optional[constr(min_length=1, max_length=50)] = None
+    bedrock_ip_address: Optional[constr(min_length=1, max_length=50)] = None
+    java_port: Optional[conint(ge=1, le=65535)] = None
+    bedrock_port: Optional[conint(ge=1, le=65535)] = None
+    country_code: Optional[constr(min_length=2, max_length=2)]
+    use_votifier: Optional[bool] = False
+    votifier_ip_address: Optional[constr(min_length=1, max_length=50)] = None
+    votifier_port: Optional[conint(ge=1, le=65535)] = None
+    votifier_key: Optional[str] = None  # TODO: Add some validation here
+    website: Optional[constr(max_length=80)] = None
+    discord: Optional[constr(max_length=80)] = None
+    banner_base64: Optional[str] = None  # TODO: Add some validation here
     gameplay: conlist(str, min_items=3, max_items=10)
-    owner_name: Optional[str] = None
-    video_url: Optional[str] = None
-    web_store: Optional[str] = None
+    owner_name: Optional[constr(min_length=3, max_length=16)] = None
+    video_url: Optional[constr(max_length=80)] = None
+    web_store: Optional[constr(max_length=80)] = None
 
-    @validator("bedrock_ip_address")
-    def validate_ip_addresses(cls, ip_address, values):
-        # TODO: Add test for this
-        if "java_ip_address" not in values and not ip_address:
+    @root_validator
+    def validate_ip_addresses(cls, values):
+        if not values["java_ip_address"] and not values["bedrock_ip_address"]:
             raise ValueError(
                 "At least one of java_ip_address or bedrock_ip_address must be set"
             )
 
-        return ip_address
+        return values
 
     @validator("gameplay")
     def validate_gameplay(cls, gameplay):
@@ -214,34 +213,33 @@ class ServerCreateInputDto(BaseDto):
 
 
 class ServerUpdateInputDto(BaseDto):
-    name: Optional[str] = NOT_SET
-    description: Optional[str] = NOT_SET
-    java_ip_address: Optional[str] = NOT_SET
-    bedrock_ip_address: Optional[str] = NOT_SET
-    java_port: Optional[int] = NOT_SET
-    bedrock_port: Optional[int] = NOT_SET
-    country_code: Optional[str] = NOT_SET
-    minecraft_version: Optional[str] = NOT_SET
-    votifier_ip_address: Optional[str] = NOT_SET
-    votifier_port: Optional[int] = NOT_SET
-    votifier_key: Optional[str] = NOT_SET
-    website: Optional[str] = NOT_SET
-    discord: Optional[str] = NOT_SET
-    banner_base64: Optional[str] = NOT_SET
+    name: Optional[constr(min_length=5, max_length=65)] = NOT_SET
+    description: Optional[constr(min_length=150, max_length=1500)] = NOT_SET
+    java_ip_address: Optional[constr(min_length=1, max_length=50)] = NOT_SET
+    bedrock_ip_address: Optional[constr(min_length=1, max_length=50)] = NOT_SET
+    java_port: Optional[conint(ge=1, le=65535)] = NOT_SET
+    bedrock_port: Optional[conint(ge=1, le=65535)] = NOT_SET
+    country_code: Optional[constr(min_length=2, max_length=2)] = NOT_SET
+    use_votifier: Optional[bool] = NOT_SET
+    votifier_ip_address: Optional[constr(min_length=1, max_length=50)] = NOT_SET
+    votifier_port: Optional[conint(ge=1, le=65535)] = NOT_SET
+    votifier_key: Optional[str] = NOT_SET  # TODO: Add Validate votifier key
+    website: Optional[constr(max_length=80)] = NOT_SET
+    discord: Optional[constr(max_length=80)] = NOT_SET
+    banner_base64: Optional[str] = NOT_SET  # TODO: Add Validate base64 length
     gameplay: Optional[conlist(str, min_items=3, max_items=10)] = NOT_SET
-    owner_name: Optional[str] = NOT_SET
-    video_url: Optional[str] = NOT_SET
-    web_store: Optional[str] = NOT_SET
+    owner_name: Optional[constr(min_length=3, max_length=16)] = NOT_SET
+    video_url: Optional[constr(max_length=80)] = NOT_SET
+    web_store: Optional[constr(max_length=80)] = NOT_SET
 
-    @validator("bedrock_ip_address")
-    def validate_ip_addresses(cls, ip_address, values):
-        # TODO: Add test for this
-        if "java_ip_address" not in values and not ip_address:
+    @root_validator
+    def validate_ip_addresses(cls, values):
+        if not values["java_ip_address"] and not values["bedrock_ip_address"]:
             raise ValueError(
                 "At least one of java_ip_address or bedrock_ip_address must be set"
             )
 
-        return ip_address
+        return values
 
     @validator("gameplay")
     def validate_gameplay(cls, gameplay):

@@ -2,17 +2,16 @@ from uuid import uuid4
 
 from sqlalchemy import Column, ForeignKeyConstraint, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
 
 from msc.database import Base
 
 
-class ServerGameplay(Base):
+class Tag(Base):
     """
-    Represents a the gameplay of a server
+    Represents a server tag
     """
 
-    __tablename__ = "server_gameplay"
+    __tablename__ = "tag"
 
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid4)
     server_id = Column(UUID(as_uuid=True), nullable=False)
@@ -21,7 +20,7 @@ class ServerGameplay(Base):
     __table_args__ = (
         UniqueConstraint(
             "id",
-            name="unique_server_gameplay_id",
+            name="unique_tag_id",
         ),
         ForeignKeyConstraint(
             ["server_id"],

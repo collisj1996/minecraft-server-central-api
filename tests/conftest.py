@@ -9,8 +9,7 @@ import tests.utils.database_config_override  # noqa
 from msc.app import create_app
 from msc.config import config
 
-# from msc import db
-from msc.database import Database, SessionLocal, engine, get_db
+from msc.database import engine
 from msc.migrations.db_migration import run_migrations
 from msc.utils.db_utils import validate_database
 from tests.conftest_fixtures.auction_fixtures import *

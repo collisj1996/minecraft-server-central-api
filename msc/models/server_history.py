@@ -11,10 +11,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 
-from msc import db
+from msc.database import Base
 
 
-class ServerHistory(db.Base):
+class ServerHistory(Base):
     """
     Represents a historical data point for a server listing for the past month
     """

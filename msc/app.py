@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.requests import Request
 
-from msc import db, errorhandling
+from msc import errorhandling
 from msc.config import config
 from msc.constants import ADMIN_USER_IDS
 
@@ -90,14 +90,9 @@ def init_middleware(app):
                     content={"message": "Not authorised"},
                 )
 
-        db.renew_session()
-
         logger.info("Request: %s", request)
         response = await call_next(request)
         logger.info("Response: %s", response)
-
-        # End the session
-        db.end_session()
 
         return response
 

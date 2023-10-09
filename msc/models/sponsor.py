@@ -11,10 +11,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 
-from msc import db
+from msc.database import Base
 
 
-class Sponsor(db.Base):
+class Sponsor(Base):
     """
     Represents an sponsor
     """

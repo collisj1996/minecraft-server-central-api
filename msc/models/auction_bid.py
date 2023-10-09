@@ -12,10 +12,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 
-from msc import db
+from msc.database import Base
 
 
-class AuctionBid(db.Base):
+class AuctionBid(Base):
     """
     Represents an auction bid
     """

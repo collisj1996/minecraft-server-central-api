@@ -12,10 +12,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 
-from msc import db
+from msc.database import Base
 
 
-class VoteHistory(db.Base):
+class VoteHistory(Base):
     """
     Represents a historical data point for a votes for a server listing older than 30 days
     """

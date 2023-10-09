@@ -14,10 +14,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from msc import db
+from msc.database import Base
 
 
-class Auction(db.Base):
+class Auction(Base):
     """
     Represents an auction
     """

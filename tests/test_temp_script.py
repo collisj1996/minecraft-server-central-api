@@ -518,7 +518,6 @@ def test_temp_script(session):
             "java_ip_address": ip,
             "java_port": None,
             "country_code": "GB",
-            "minecraft_version": "1.16.5",
             "website": "https://www.minecraftservercentral.com",
             "discord": "https://discord.gg/msc",
             "gameplay": ["survival", "creative", "skyblock"],
