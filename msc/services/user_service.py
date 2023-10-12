@@ -4,6 +4,13 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from msc.models import User
+from msc.errors import NotFound
+
+
+class UserNotFound(NotFound):
+    """User not found error"""
+
+    pass
 
 
 @contextmanager
@@ -34,5 +41,19 @@ def add_user(
 
     with _handle_db_errors():
         db.commit()
+
+    return user
+
+
+def get_user(
+    db: Session,
+    user_id: UUID,
+):
+    """Gets a user from the database"""
+
+    user = db.query(User).filter(User.id == user_id).one_or_none()
+
+    if not user:
+        raise UserNotFound("User information not found")
 
     return user
