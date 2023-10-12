@@ -17,6 +17,7 @@ class Vote(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid4)
     server_id = Column(UUID(as_uuid=True), nullable=False)
     client_ip_address = Column(Text, nullable=False)
+    minecraft_username = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=False)
 
     __table_args__ = (
@@ -35,7 +36,10 @@ class Vote(Base):
         self,
         server_id: UUID,
         client_ip_address: str,
+        minecraft_username: str,
     ):
         self.server_id = server_id
         self.client_ip_address = client_ip_address
+        self.minecraft_username = minecraft_username
+
         self.created_at = datetime.utcnow()

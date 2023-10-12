@@ -270,3 +270,7 @@ class ServerGetHistoryInputDto(BaseDto):
         if time_interval not in ["day", "hour"]:
             raise ValueError("Invalid time interval, must be day or hour")
         return time_interval
+
+
+class ServerTestVotifierInputDto(BaseDto):
+    minecraft_username: str

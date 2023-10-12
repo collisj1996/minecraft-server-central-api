@@ -22,6 +22,7 @@ mcstatus = "^11.0.1"
 cognitojwt = {extras = ["sync"], version = "^1.4.1"}
 pytest-asyncio = "^0.21.1"
 pytest-fastapi-deps = "^0.2.3"
+aiovotifier = "^1.0.6"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"

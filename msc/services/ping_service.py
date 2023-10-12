@@ -521,6 +521,7 @@ def poll_server_by_id(
         raise Unauthorized("You are not authorized to access this server")
 
     poll_server(
+        db=db,
         server=server,
         commit=True,
     )

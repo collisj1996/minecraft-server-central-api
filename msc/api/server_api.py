@@ -17,9 +17,11 @@ from msc.dto.server_dto import (
     ServerUpdateInputDto,
     ServerGetHistoryInputDto,
     ServerHistoryDto,
+    ServerTestVotifierInputDto,
 )
-from msc.services import ping_service, server_service
-from msc.utils.api_utils import auth_required
+from msc.services import ping_service, server_service, vote_service
+from msc.utils import api_utils
+from msc.utils.api_utils import auth_required, get_client_ip
 
 router = APIRouter()
 
@@ -219,3 +221,30 @@ def get_server_historical_data(
     )
 
     return [ServerHistoryDto.from_service(s) for s in server_history]
+
+
+@router.post("/servers/{server_id}/test_votifier")
+@auth_required
+def test_votifier(
+    request: Request,
+    server_id: str,
+    body: ServerTestVotifierInputDto,
+    db: Session = Depends(get_db),
+) -> ServerPingOutputDto:
+    """Endpoint for testing votifier"""
+
+    client_ip = api_utils.get_client_ip(request)
+
+    user_id = request.state.user_id
+
+    response = vote_service.test_votifier(
+        db=db,
+        server_id=UUID(server_id),
+        user_id=UUID(user_id),
+        client_ip=client_ip,
+        minecraft_username=body.minecraft_username,
+    )
+
+    return {
+        "message": "ok",
+    }

@@ -6,8 +6,15 @@ from uuid import UUID
 from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 
-from msc.errors import NotFound, TooManyRequests
+from msc.errors import NotFound, TooManyRequests, Unauthorized, BadRequest
 from msc.models import Server, Vote, ServerHistory
+from aiovotifier import VotifierClient
+import asyncio
+import logging
+from msc.constants import SERVER_LIST_SERVICE_NAME
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -31,6 +38,7 @@ def add_vote(
     db: Session,
     server_id: UUID,
     client_ip: UUID,
+    minecraft_username: str,
 ):
     """Adds a vote record to a server"""
 
@@ -46,16 +54,29 @@ def add_vote(
     if not server:
         raise NotFound("Server not found")
 
-    if _has_user_voted_in_last_24_hours(db, server_id, client_ip):
+    # TODO: Test this works
+    if _has_username_voted_in_last_24_hours(
+        db=db,
+        server_id=server_id,
+        minecraft_username=minecraft_username,
+    ):
+        raise TooManyRequests(
+            "That Minecraft user has already voted for this server in the last 24 hours"
+        )
+
+    if _has_ip_voted_in_last_24_hours(
+        db=db,
+        server_id=server_id,
+        client_ip=client_ip,
+    ):
         raise TooManyRequests(
             "You have already voted for this server in the last 24 hours"
         )
 
-    # TODO: Send vote to votifier address
-
     vote = Vote(
         server_id=server_id,
         client_ip_address=client_ip,
+        minecraft_username=minecraft_username,
     )
 
     db.add(vote)
@@ -63,10 +84,24 @@ def add_vote(
     with _handle_db_errors():
         db.commit()
 
+    # TODO: Test this works
+    if server.use_votifier:
+        try:
+            asyncio.run(
+                _send_vote(
+                    server=server,
+                    minecraft_username=minecraft_username,
+                    client_ip=client_ip,
+                )
+            )
+        except Exception as e:
+            logger.error("Unhandled error sending vote: ", e)
+            pass
+
     return vote
 
 
-def _has_user_voted_in_last_24_hours(
+def _has_ip_voted_in_last_24_hours(
     db: Session,
     server_id: UUID,
     client_ip: UUID,
@@ -84,6 +119,24 @@ def _has_user_voted_in_last_24_hours(
     return user_votes_24_hours > 0
 
 
+def _has_username_voted_in_last_24_hours(
+    db: Session,
+    server_id: UUID,
+    minecraft_username: str,
+):
+    """Checks if the requesting client has voted for the server in the last 24 hours"""
+
+    user_votes_24_hours = (
+        db.query(Vote)
+        .filter(Vote.server_id == server_id)
+        .filter(Vote.minecraft_username == minecraft_username)
+        .filter(Vote.created_at > datetime.utcnow() - timedelta(hours=24))
+        .count()
+    )
+
+    return user_votes_24_hours > 0
+
+
 def check_vote_info(
     db: Session,
     server_id: UUID,
@@ -91,7 +144,7 @@ def check_vote_info(
 ) -> bool:
     """Checks if the requesting client has voted for the server in the last 24 hours"""
 
-    has_voted = _has_user_voted_in_last_24_hours(
+    has_voted = _has_ip_voted_in_last_24_hours(
         db=db,
         server_id=server_id,
         client_ip=client_ip,
@@ -207,3 +260,67 @@ def get_new_votes(
     )
 
     return new_votes
+
+
+def test_votifier(
+    db: Session,
+    user_id: UUID,
+    server_id: UUID,
+    client_ip: UUID,
+    minecraft_username: str,
+):
+    """Tests the votifier connection"""
+
+    server = (
+        db.query(Server)
+        .filter(
+            Server.id == server_id,
+            Server.flagged_for_deletion == False,
+        )
+        .one_or_none()
+    )
+
+    if not server:
+        raise NotFound("Server not found")
+
+    if server.user_id != user_id:
+        raise Unauthorized("You are not authorized to test votifier on this server")
+
+    if not server.use_votifier:
+        raise BadRequest("Votifier is not enabled for this server")
+
+    try:
+        asyncio.run(
+            _send_vote(
+                server,
+                minecraft_username,
+                client_ip,
+            )
+        )
+    except Exception as e:
+        logger.error("Unhandled error sending vote: ", e)
+        raise e
+
+    return "success"
+
+
+async def _send_vote(
+    server: Server,
+    minecraft_username: str,
+    client_ip: str,
+):
+    """Sends a vote to the votifier server"""
+
+    client = VotifierClient(
+        host=server.votifier_ip_address,
+        port=server.votifier_port,
+        service_name=SERVER_LIST_SERVICE_NAME,
+        secret=server.votifier_key,
+    )
+
+    response = await client.vote(
+        username=minecraft_username,
+        user_address=client_ip,
+    )
+
+    return response

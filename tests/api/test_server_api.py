@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from msc.config import config
 from msc.models import Server, User
+from msc.services import server_service
 
 from .utils import get_auth_header, get_response_body
 
@@ -282,3 +283,44 @@ def test_update_server_validation_no_ip_address(
         "At least one of java_ip_address or bedrock_ip_address must be set"
         in get_response_body(response)["message"]
     )
+
+
+def test_server_test_votifier(
+    session,
+    user_jack: User,
+    test_client: TestClient,
+    mocker,
+):
+    """Test the Test Votifier endpoint"""
+
+    config.development_mode = True
+
+    mocker.patch("msc.utils.api_utils.get_client_ip", return_value="testclient")
+
+    # create a server
+    server = server_service.create_server(
+        db=session,
+        name="Test Local Server",
+        description="This is my actual local test server it is hosted on my PC and I will use it to test that votifier works and for other test purposes... adslnasdlajsndlasdlknasdklnaslkdnalksndklansd",
+        user_id=user_jack.id,
+        country_code="US",
+        java_ip_address="5.71.159.170",
+        java_port=25565,
+        gameplay=["survival", "creative", "skyblock"],
+        use_votifier=True,
+        votifier_ip_address="5.71.159.170",
+        votifier_port=8192,
+        votifier_key="o4c1en9ug4639t8foddt32sibb",
+    )
+
+    # call the test votifier endpoint
+
+    response = test_client.post(
+        f"/servers/{str(server.id)}/test_votifier",
+        headers=get_auth_header(user_jack.id),
+        json={
+            "minecraft_username": "mcsc_test_user",
+        },
+    )
+
+    assert response.status_code == 200
