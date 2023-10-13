@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from msc.database import get_db
 from msc.dto.vote_dto import CheckVoteInputDto, CheckVoteOutputDto, CreateVoteInputDto
 from msc.services import vote_service
-from msc.utils.api_utils import get_client_ip
+from msc.utils import api_utils
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ def add_vote(
 ) -> str:
     """Endpoint for adding a voter"""
 
-    client_ip = get_client_ip(request)
+    client_ip = api_utils.get_client_ip(request)
 
     # TODO: Add error handling for no client IP
 
@@ -44,7 +44,7 @@ def check_vote_info(
 ) -> CheckVoteOutputDto:
     """Endpoint for checking if a voter has voted for a server in the last 24 hours"""
 
-    client_ip = get_client_ip(request)
+    client_ip = api_utils.get_client_ip(request)
 
     # TODO: Add error handling for no client IP
 

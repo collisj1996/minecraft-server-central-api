@@ -30,6 +30,7 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
         db=session,
         server_id=server_colcraft.id,
         client_ip=visitor_ip,
+        minecraft_username="test",
     )
 
     assert session.query(Vote).count() == 1
@@ -39,6 +40,7 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
             db=session,
             server_id=server_colcraft.id,
             client_ip=visitor_ip,
+            minecraft_username="alan",
         )
 
     assert str(e.value) == "You have already voted for this server in the last 24 hours"
@@ -50,6 +52,7 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
                 db=session,
                 server_id=server_colcraft.id,
                 client_ip=visitor_ip,
+                minecraft_username="alan",
             )
 
             assert (
@@ -63,6 +66,7 @@ def test_one_vote_per_visitor_per_server_24_hours(session, server_colcraft: Serv
             db=session,
             server_id=server_colcraft.id,
             client_ip=visitor_ip,
+            minecraft_username="alan",
         )
 
     assert session.query(Vote).count() == 2

@@ -222,7 +222,7 @@ def test_create_server(
         votifier_key=None,
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
-        gameplay=["Survival", "Creative", "Skyblock"],
+        tags=["Survival", "Creative", "Skyblock"],
     )
 
     assert server
@@ -255,7 +255,7 @@ def test_10_servers_per_user(
             votifier_key=None,
             website="https://www.myserver.com",
             discord="https://discord.gg/myserver",
-            gameplay=["Survival", "Creative", "Skyblock"],
+            tags=["Survival", "Creative", "Skyblock"],
         )
 
     with pytest.raises(BadRequest) as e:
@@ -272,7 +272,7 @@ def test_10_servers_per_user(
             votifier_key=None,
             website="https://www.myserver.com",
             discord="https://discord.gg/myserver",
-            gameplay=["Survival", "Creative", "Skyblock"],
+            tags=["Survival", "Creative", "Skyblock"],
         )
 
     assert str(e.value) == "You cannot create more than 10 servers"
@@ -304,7 +304,7 @@ def _create_multiple_servers_for_pagination(session):
             votifier_key=None,
             website="https://www.myserver.com",
             discord="https://discord.gg/myserver",
-            gameplay=["Survival", "Creative", "Skyblock"],
+            tags=["Survival", "Creative", "Skyblock"],
         )
 
         # force add i votes for the server
@@ -363,7 +363,7 @@ def test_update_server_all_properties(
         website="https://www.updated.com",
         discord="https://discord.gg/updated",
         banner_base64=None,
-        gameplay=["Survival", "Creative", "Skyblock", "Bedwars", "Minigames"],
+        tags=["Survival", "Creative", "Skyblock", "Bedwars", "Minigames"],
     )
 
     assert updated_server
@@ -408,7 +408,7 @@ def test_update_server_some_properties(
         votifier_key=None,
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
-        gameplay=["Survival", "Creative", "Skyblock"],
+        tags=["Survival", "Creative", "Skyblock"],
     )
 
     # now update some properties
@@ -529,7 +529,7 @@ def test_get_my_servers(
         user_id=user_jack.id,
         description="My Server Description",
         java_ip_address="1.2.3.4",
-        gameplay=["Survival", "Creative", "Skyblock"],
+        tags=["Survival", "Creative", "Skyblock"],
         country_code="GB",
     )
 

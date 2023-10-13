@@ -13,7 +13,7 @@ def test_add_vote(
     server_colcraft: Server,
     mocker,
 ):
-    mocker.patch("msc.api.vote_api._get_client_ip", return_value="testclient")
+    mocker.patch("msc.utils.api_utils.get_client_ip", return_value="testclient")
 
     response = test_client.post(
         "/votes",
@@ -28,14 +28,14 @@ def test_add_vote(
     assert response.json() == "success"
 
 
-def test_add_2_votes_24_hours(
+def test_add_2_votes_24_hours_same_ip(
     session,
     test_client: TestClient,
     user_jack: User,
     server_colcraft: Server,
     mocker,
 ):
-    mocker.patch("msc.api.vote_api._get_client_ip", return_value="testclient")
+    mocker.patch("msc.utils.api_utils.get_client_ip", return_value="testclient")
 
     response = test_client.post(
         "/votes",
@@ -52,7 +52,7 @@ def test_add_2_votes_24_hours(
         headers=get_auth_header(user_jack.id),
         json={
             "server_id": str(server_colcraft.id),
-            "minecraft_username": "test",
+            "minecraft_username": "alan",
         },
     )
 
@@ -74,7 +74,7 @@ def test_check_vote_info(
     server_colcraft: Server,
     mocker,
 ):
-    mocker.patch("msc.api.vote_api._get_client_ip", return_value="testclient")
+    mocker.patch("msc.utils.api_utils.get_client_ip", return_value="testclient")
 
     # first vote
     response = test_client.post(

@@ -64,7 +64,7 @@ class Server(Base):
     uptime = Column(Float, nullable=False)
     search_index = Column(TSVECTOR(), nullable=False)
 
-    gameplay = relationship("ServerGameplay", backref="server")
+    tags = relationship("Tag", backref="server")
 
     __table_args__ = (
         UniqueConstraint(

@@ -21,7 +21,7 @@ from msc.dto.server_dto import (
 )
 from msc.services import ping_service, server_service, vote_service
 from msc.utils import api_utils
-from msc.utils.api_utils import auth_required, get_client_ip
+from msc.utils.api_utils import auth_required
 
 router = APIRouter()
 
@@ -54,7 +54,7 @@ def create_server(
         website=body.website,
         discord=body.discord,
         banner_base64=body.banner_base64,
-        gameplay=body.gameplay,
+        tags=body.tags,
         video_url=body.video_url,
         web_store=body.web_store,
         owner_name=body.owner_name,
@@ -153,7 +153,7 @@ def update_server(
         website=body.website,
         discord=body.discord,
         banner_base64=body.banner_base64,
-        gameplay=body.gameplay,
+        tags=body.tags,
         video_url=body.video_url,
         web_store=body.web_store,
         owner_name=body.owner_name,

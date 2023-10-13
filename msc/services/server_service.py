@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 
 from msc.dto.custom_types import NOT_SET
 from msc.errors import BadRequest, NotFound
-from msc.models import Server, ServerGameplay, Vote, ServerHistory, ServerHistoryOld
+from msc.models import Server, Tag, Vote, ServerHistory, ServerHistoryOld
 from msc.models.server import INDEX_REMOVE_CHARS
 from msc.services import ping_service
 from msc.utils.file_utils import _get_checksum
@@ -366,7 +366,7 @@ def update_server(
     votifier_key: Optional[str] = NOT_SET,
     website: Optional[str] = NOT_SET,
     discord: Optional[str] = NOT_SET,
-    gameplay: Optional[List[str]] = NOT_SET,
+    tags: Optional[List[str]] = NOT_SET,
     video_url: Optional[str] = NOT_SET,
     web_store: Optional[str] = NOT_SET,
     owner_name: Optional[str] = NOT_SET,
@@ -435,20 +435,20 @@ def update_server(
     if owner_name != NOT_SET:
         server.owner_name = owner_name
 
-    if gameplay != NOT_SET:
-        # Delete all gameplay
-        db.query(ServerGameplay).filter(
-            ServerGameplay.server_id == server_id,
+    if tags != NOT_SET:
+        # Delete all server tags
+        db.query(Tag).filter(
+            Tag.server_id == server_id,
         ).delete()
 
-        # Add new gameplay
-        for gameplay_name in gameplay:
-            server_gameplay = ServerGameplay(
+        # Add new server tags
+        for tag in tags:
+            server_tag = Tag(
                 server_id=server_id,
-                name=gameplay_name,
+                name=tag,
             )
 
-            db.add(server_gameplay)
+            db.add(server_tag)
 
     # poll the server to check it is online and get extra data
     ping_service.poll_server(
@@ -470,7 +470,7 @@ def create_server(
     name: str,
     user_id: UUID,
     country_code: str,
-    gameplay: List[str],
+    tags: List[str],
     java_ip_address: Optional[str] = None,
     bedrock_ip_address: Optional[str] = None,
     java_port: Optional[int] = None,
@@ -547,13 +547,13 @@ def create_server(
         server.banner_filetype = file_type
         server.banner_checksum = banner_checksum
 
-    for gameplay_name in gameplay:
-        server_gameplay = ServerGameplay(
+    for tag in tags:
+        server_tag = Tag(
             server_id=server.id,
-            name=gameplay_name,
+            name=tag,
         )
 
-        db.add(server_gameplay)
+        db.add(server_tag)
 
     with _handle_db_errors():
         db.commit()

@@ -520,7 +520,7 @@ def test_temp_script(session):
             "country_code": "GB",
             "website": "https://www.minecraftservercentral.com",
             "discord": "https://discord.gg/msc",
-            "gameplay": ["survival", "creative", "skyblock"],
+            "tags": ["survival", "creative", "skyblock"],
         }
 
         # create the server

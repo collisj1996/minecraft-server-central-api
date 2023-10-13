@@ -29,7 +29,7 @@ def server_colcraft(session, user_jack: User):
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
         banner_base64=image_base64_string,
-        gameplay=["Survival", "Creative", "Skyblock"],
+        tags=["Survival", "Creative", "Skyblock"],
     )
 
     return server
@@ -56,7 +56,7 @@ def server_colcraft_2(session, user_jack: User):
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
         banner_base64=image_base64_string,
-        gameplay=["Survival", "Creative", "Skyblock"],
+        tags=["Survival", "Creative", "Skyblock"],
     )
 
     return server
@@ -83,7 +83,7 @@ def server_hypixel(session, user_alan: User):
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
         banner_base64=image_base64_string,
-        gameplay=["Survival", "Creative", "Skyblock"],
+        tags=["Survival", "Creative", "Skyblock"],
     )
 
     return server
@@ -116,7 +116,7 @@ def ten_servers(session):
             java_ip_address=f"{i}.168.1.100",
             java_port=8080,
             country_code="GB",
-            gameplay=["Survival", "Creative", "Skyblock"],
+            tags=["Survival", "Creative", "Skyblock"],
         )
 
         output["servers_list"].append(server)
@@ -154,7 +154,7 @@ def many_servers(session):
             java_ip_address=f"{i}.168.1.100",
             java_port=8080,
             country_code="GB",
-            gameplay=["Survival", "Creative", "Skyblock"],
+            tags=["Survival", "Creative", "Skyblock"],
         )
 
         output["servers_list"].append(server)
@@ -192,6 +192,7 @@ def server_colcraft_history(
                         db=session,
                         server_id=server_colcraft.id,
                         client_ip=str(uuid4()),
+                        minecraft_username=f"test{i}",
                     )
 
                 data_point = ServerHistory(

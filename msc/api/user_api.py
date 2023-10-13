@@ -35,7 +35,7 @@ def add_user(
 def get_my_user(
     request: Request,
     db: Session = Depends(get_db),
-):
+) -> UserDto:
     """Endpoint for getting a user"""
     user_id = request.state.user_id
 

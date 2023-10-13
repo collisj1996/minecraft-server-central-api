@@ -1,6 +1,6 @@
 CDN_DOMAIN = "cdn.minecraftservercentral.com"
 
-ALLOWED_GAMEPLAY = [
+ALLOWED_TAGS = [
     "factions",
     "hungergames",
     "economy",

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import conint, conlist, validator, constr, root_validator
 
-from msc.constants import ALLOWED_GAMEPLAY, CDN_DOMAIN
+from msc.constants import ALLOWED_TAGS, CDN_DOMAIN
 from msc.dto.base import BaseDto
 from msc.dto.custom_types import NOT_SET, DateTimeUTC
 from msc.models import Server
@@ -51,7 +51,7 @@ class ServerDto(BaseDto):
     web_store: Optional[str]
     banner_url: Optional[str]
     icon_url: Optional[str]
-    gameplay: List[str]
+    tags: List[str]
     created_at: DateTimeUTC
     updated_at: DateTimeUTC
     last_pinged_at: Optional[DateTimeUTC]
@@ -81,7 +81,7 @@ class ServerDto(BaseDto):
             discord=server.discord,
             banner_url=_get_server_banner_url(server),
             icon_url=_get_server_icon_url(server),
-            gameplay=[g.name for g in server.gameplay],
+            tags=[tag.name for tag in server.tags],
             created_at=server.created_at,
             updated_at=server.updated_at,
             last_pinged_at=server.last_pinged_at,
@@ -153,7 +153,7 @@ class GetServerDto(ServerDto):
             discord=server_info.server.discord,
             banner_url=_get_server_banner_url(server_info.server),
             icon_url=_get_server_icon_url(server_info.server),
-            gameplay=[g.name for g in server_info.server.gameplay],
+            tags=[tag.name for tag in server_info.server.tags],
             created_at=server_info.server.created_at,
             updated_at=server_info.server.updated_at,
             last_pinged_at=server_info.server.last_pinged_at,
@@ -191,7 +191,7 @@ class ServerCreateInputDto(BaseDto):
     website: Optional[constr(max_length=80)] = None
     discord: Optional[constr(max_length=80)] = None
     banner_base64: Optional[str] = None  # TODO: Add some validation here
-    gameplay: conlist(str, min_items=3, max_items=10)
+    tags: conlist(str, min_items=3, max_items=10)
     owner_name: Optional[constr(min_length=3, max_length=16)] = None
     video_url: Optional[constr(max_length=80)] = None
     web_store: Optional[constr(max_length=80)] = None
@@ -205,14 +205,12 @@ class ServerCreateInputDto(BaseDto):
 
         return values
 
-    @validator("gameplay")
-    def validate_gameplay(cls, gameplay):
-        for g in gameplay:
-            if g not in ALLOWED_GAMEPLAY:
-                raise ValueError(
-                    f"Invalid gameplay: {g}. Allowed gameplay: {ALLOWED_GAMEPLAY}"
-                )
-        return gameplay
+    @validator("tags")
+    def validate_tags(cls, tags):
+        for tag in tags:
+            if tag not in ALLOWED_TAGS:
+                raise ValueError(f"Invalid tag: {tag}. Allowed tags: {ALLOWED_TAGS}")
+        return tags
 
 
 class ServerUpdateInputDto(BaseDto):
@@ -230,7 +228,7 @@ class ServerUpdateInputDto(BaseDto):
     website: Optional[constr(max_length=80)] = NOT_SET
     discord: Optional[constr(max_length=80)] = NOT_SET
     banner_base64: Optional[str] = NOT_SET  # TODO: Add Validate base64 length
-    gameplay: Optional[conlist(str, min_items=3, max_items=10)] = NOT_SET
+    tags: Optional[conlist(str, min_items=3, max_items=10)] = NOT_SET
     owner_name: Optional[constr(min_length=3, max_length=16)] = NOT_SET
     video_url: Optional[constr(max_length=80)] = NOT_SET
     web_store: Optional[constr(max_length=80)] = NOT_SET
@@ -244,14 +242,12 @@ class ServerUpdateInputDto(BaseDto):
 
         return values
 
-    @validator("gameplay")
-    def validate_gameplay(cls, gameplay):
-        for g in gameplay:
-            if g not in ALLOWED_GAMEPLAY:
-                raise ValueError(
-                    f"Invalid gameplay: {g}. Allowed gameplay: {ALLOWED_GAMEPLAY}"
-                )
-        return gameplay
+    @validator("tags")
+    def validate_tags(cls, tags):
+        for tag in tags:
+            if tag not in ALLOWED_TAGS:
+                raise ValueError(f"Invalid tag: {tag}. Allowed tags: {ALLOWED_TAGS}")
+        return tags
 
 
 class ServerDeleteOutputDto(BaseDto):
