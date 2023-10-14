@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
+import calendar
 
 from sqlalchemy import (
     CheckConstraint,
@@ -27,6 +28,8 @@ class Sponsor(Base):
     slot = Column(Integer, nullable=False)
     starts_at = Column(DateTime, nullable=False)
     ends_at = Column(DateTime, nullable=False)
+    year = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
 
@@ -45,9 +48,25 @@ class Sponsor(Base):
             "id",
             name="sponsor_unique_id",
         ),
+        UniqueConstraint(
+            "slot",
+            "year",
+            "month",
+            name="sponsor_unique_slot_year_month",
+        ),
         CheckConstraint(
             "ends_at > starts_at",
             name="sponsor_ends_at_after_starts_at",
+        ),
+        # TODO: Add test for this
+        CheckConstraint(
+            "slot > 0",
+            name="sponsor_slot_greater_than_zero",
+        ),
+        # TODO: Add test for this
+        CheckConstraint(
+            "slot <= 10",
+            name="sponsor_slot_less_than_or_equal_to_ten",
         ),
     )
 
@@ -56,14 +75,38 @@ class Sponsor(Base):
         user_id: UUID,
         server_id: UUID,
         slot: int,
-        starts_at: datetime,
-        ends_at: datetime,
+        year: int,
+        month: int,
     ):
         self.user_id = user_id
         self.server_id = server_id
         self.slot = slot
-        self.starts_at = starts_at
-        self.ends_at = ends_at
+        self.year = year
+        self.month = month
+
+        self.starts_at = datetime(
+            year=year,
+            month=month,
+            day=1,
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+            tzinfo=timezone.utc,
+        )
+
+        _, num_days = calendar.monthrange(year, month)
+
+        self.ends_at = datetime(
+            year=year,
+            month=month,
+            day=num_days,
+            hour=23,
+            minute=59,
+            second=59,
+            microsecond=999999,
+            tzinfo=timezone.utc,
+        )
 
         now = datetime.utcnow()
         self.created_at = now

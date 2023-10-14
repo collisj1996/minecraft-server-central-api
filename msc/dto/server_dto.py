@@ -172,6 +172,10 @@ class ServersGetOutputDto(BaseDto):
     servers: List[GetServerDto]
 
 
+class ServersSponsoredGetOutputDto(BaseDto):
+    __root__: List[GetServerDto]
+
+
 class ServersMineOutputDto(BaseDto):
     __root__: List[GetServerDto]
 

@@ -1,9 +1,11 @@
 from fastapi.testclient import TestClient
 
+from datetime import datetime
+import freezegun
 import pytest
 from msc.config import config
 from msc.models import Server, User
-from msc.services import server_service
+from msc.services import server_service, sponsor_service
 
 from .utils import get_auth_header, get_response_body
 
@@ -363,3 +365,46 @@ def test_server_test_votifier(
     )
 
     assert response.status_code == 200
+
+
+def test_get_sponsored(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+    test_client: TestClient,
+):
+    """Tests searching for servers"""
+
+    config.development_mode = True
+
+    sponsor_service._add_sponsor(
+        db=session,
+        user_id=server_colcraft.user_id,
+        server_id=server_colcraft.id,
+        sponsored_year=2021,
+        sponsored_month=10,
+        slot=2,
+    )
+
+    sponsor_service._add_sponsor(
+        db=session,
+        user_id=server_colcraft_2.user_id,
+        server_id=server_colcraft_2.id,
+        sponsored_year=2021,
+        sponsored_month=10,
+        slot=1,
+    )
+
+    with freezegun.freeze_time(datetime(2021, 10, 15)):
+        response = test_client.get(
+            "/servers/sponsored",
+        )
+
+        assert response.status_code == 200
+
+        body = get_response_body(response)
+
+        assert len(body) == 2
+        assert body[0]["id"] == str(server_colcraft_2.id)  # slot 1
+        assert body[1]["id"] == str(server_colcraft.id)  # slot 2

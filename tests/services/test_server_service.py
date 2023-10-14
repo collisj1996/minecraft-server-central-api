@@ -1,12 +1,14 @@
 import base64
 from io import BytesIO
 from uuid import uuid4
+import freezegun
+from datetime import datetime
 
 import pytest
 
 from msc.errors import BadRequest, NotFound
-from msc.models import Server, User, Vote
-from msc.services import server_service, user_service, vote_service
+from msc.models import Server, User, Vote, Sponsor
+from msc.services import server_service, user_service, vote_service, sponsor_service
 from msc.services.server_service import GetServersInfo, GetServerInfo
 
 
@@ -958,3 +960,148 @@ def test_servers_search_query_tags_and_votes(
     for server_info in get_servers_search.servers:
         if server_info.server.id == server_hypixel.id:
             assert server_info.total_votes == 1
+
+
+def test_get_sponsored_servers(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+):
+    """Test getting sponsored servers"""
+
+    with freezegun.freeze_time(datetime(2021, 12, 15)):
+        # add a sponsored server
+        sponsor_service._add_sponsor(
+            db=session,
+            user_id=server_colcraft.user_id,
+            server_id=server_colcraft.id,
+            sponsored_year=2021,
+            sponsored_month=12,
+            slot=1,
+        )
+
+        # add a sponsored server
+        sponsor_service._add_sponsor(
+            db=session,
+            user_id=server_colcraft_2.user_id,
+            server_id=server_colcraft_2.id,
+            sponsored_year=2021,
+            sponsored_month=12,
+            slot=2,
+        )
+
+        sponsored_servers = server_service.get_sponsored_servers(
+            db=session,
+        )
+
+        assert len(sponsored_servers) == 2
+
+        # assert the sponsored servers are in the correct order
+        assert sponsored_servers[0].server.id == server_colcraft.id
+        assert sponsored_servers[1].server.id == server_colcraft_2.id
+
+
+def test_get_sponsored_servers_scoped_to_year_and_month(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+):
+    """Tests that the get sponsored servers query is scoped to the current year and month"""
+
+    # add some sponsored servers for 2021 10
+    sponsor_service._add_sponsor(
+        db=session,
+        user_id=server_colcraft.user_id,
+        server_id=server_colcraft.id,
+        sponsored_year=2021,
+        sponsored_month=10,
+        slot=2,
+    )
+
+    sponsor_service._add_sponsor(
+        db=session,
+        user_id=server_colcraft_2.user_id,
+        server_id=server_colcraft_2.id,
+        sponsored_year=2021,
+        sponsored_month=10,
+        slot=1,
+    )
+
+    # add some sponsored servers for 2021 11
+    sponsor_service._add_sponsor(
+        db=session,
+        user_id=server_colcraft.user_id,
+        server_id=server_colcraft.id,
+        sponsored_year=2021,
+        sponsored_month=11,
+        slot=1,
+    )
+
+    # add a sponsored server 2021 12
+    sponsor_service._add_sponsor(
+        db=session,
+        user_id=server_colcraft.user_id,
+        server_id=server_colcraft.id,
+        sponsored_year=2021,
+        sponsored_month=12,
+        slot=3,
+    )
+
+    sponsor_service._add_sponsor(
+        db=session,
+        user_id=server_hypixel.user_id,
+        server_id=server_hypixel.id,
+        sponsored_year=2021,
+        sponsored_month=12,
+        slot=1,
+    )
+
+    sponsor_service._add_sponsor(
+        db=session,
+        user_id=server_colcraft_2.user_id,
+        server_id=server_colcraft_2.id,
+        sponsored_year=2021,
+        sponsored_month=12,
+        slot=2,
+    )
+
+    # assert all sponsored servers are in the database
+    assert session.query(Sponsor).count() == 6
+
+    # check correct sponsored servers are returned for 2021 10
+    with freezegun.freeze_time(datetime(2021, 10, 15)):
+        sponsored_servers = server_service.get_sponsored_servers(
+            db=session,
+        )
+
+        assert len(sponsored_servers) == 2
+
+        # assert the sponsored servers are in the correct order
+        assert sponsored_servers[0].server.id == server_colcraft_2.id  # slot 1
+        assert sponsored_servers[1].server.id == server_colcraft.id  # slot 2
+
+    # check correct sponsored servers are returned for 2021 11
+    with freezegun.freeze_time(datetime(2021, 11, 15)):
+        sponsored_servers = server_service.get_sponsored_servers(
+            db=session,
+        )
+
+        assert len(sponsored_servers) == 1
+
+        # assert the sponsored servers are in the correct order
+        assert sponsored_servers[0].server.id == server_colcraft.id  # slot 1
+
+    # check correct sponsored servers are returned for 2021 12
+    with freezegun.freeze_time(datetime(2021, 12, 15)):
+        sponsored_servers = server_service.get_sponsored_servers(
+            db=session,
+        )
+
+        assert len(sponsored_servers) == 3
+
+        # assert the sponsored servers are in the correct order
+        assert sponsored_servers[0].server.id == server_hypixel.id  # slot 1
+        assert sponsored_servers[1].server.id == server_colcraft_2.id  # slot 2
+        assert sponsored_servers[2].server.id == server_colcraft.id  # slot 3

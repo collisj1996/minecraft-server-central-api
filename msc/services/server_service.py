@@ -23,8 +23,9 @@ from sqlalchemy.orm import Session
 
 from msc.dto.custom_types import NOT_SET
 from msc.errors import BadRequest, NotFound
-from msc.models import Server, Tag, Vote, ServerHistory
+from msc.models import Server, Tag, Vote, ServerHistory, Sponsor
 from msc.models.server import INDEX_REMOVE_CHARS
+from msc.services.vote_service import get_total_votes, get_votes_this_month
 from msc.services import ping_service
 from msc.utils.file_utils import _get_checksum
 
@@ -184,6 +185,55 @@ def get_servers(
         ],
         total_servers=total_servers,
     )
+
+
+def get_sponsored_servers(db: Session) -> List[GetServerInfo]:
+    """Returns all current sponsored servers in slot order"""
+
+    # Get the current month and year
+    now = datetime.now()
+    month = now.month
+    year = now.year
+
+    # Get servers and vote count
+    servers_query = (
+        db.query(
+            Server,
+        )
+        .join(
+            Sponsor,
+            Server.id == Sponsor.server_id,
+        )
+        .filter(
+            Server.flagged_for_deletion == False,
+            Sponsor.month == month,
+            Sponsor.year == year,
+        )
+        .order_by(
+            Sponsor.slot.asc(),
+        )
+    )
+
+    servers = servers_query.all()
+
+    return [
+        GetServerInfo(
+            server=server,
+            votes_this_month=get_votes_this_month(
+                db=db,
+                server=server,
+            ),
+            total_votes=get_total_votes(
+                db=db,
+                server=server,
+            ),
+            rank=get_server_rank(
+                db=db,
+                server=server,
+            ),
+        )
+        for server in servers
+    ]
 
 
 def get_server(

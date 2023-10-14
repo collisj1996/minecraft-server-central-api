@@ -66,6 +66,11 @@ class Auction(Base):
             "sponsored_slots > 0",
             name="auction_sponsored_slots_greater_than_zero",
         ),
+        # TODO: Add test for this
+        CheckConstraint(
+            "sponsored_slots <= 10",
+            name="auction_sponsored_slots_less_than_or_equal_to_ten",
+        ),
         CheckConstraint(
             "minimum_bid > 0",
             name="auction_minimum_bid_greater_than_zero",

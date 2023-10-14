@@ -18,6 +18,7 @@ from msc.dto.server_dto import (
     ServerGetHistoryInputDto,
     ServerHistoryDto,
     ServerTestVotifierInputDto,
+    ServersSponsoredGetOutputDto,
 )
 from msc.services import ping_service, server_service, vote_service
 from msc.utils import api_utils
@@ -83,6 +84,19 @@ def get_my_servers(
     )
 
     return dto
+
+
+@router.get("/servers/sponsored")
+def get_sponsored_servers(
+    db: Session = Depends(get_db),
+) -> ServersSponsoredGetOutputDto:
+    """Endpoint for getting all currently sponsored servers"""
+
+    sponsored_servers = server_service.get_sponsored_servers(db=db)
+
+    return ServersSponsoredGetOutputDto(
+        __root__=[GetServerDto.from_service(s) for s in sponsored_servers]
+    )
 
 
 @router.get("/servers/{server_id}")
