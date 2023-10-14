@@ -5,7 +5,7 @@ from pydantic import conint, conlist, validator, constr, root_validator
 
 from msc.constants import ALLOWED_TAGS, CDN_DOMAIN
 from msc.dto.base import BaseDto
-from msc.dto.custom_types import NOT_SET, DateTimeUTC
+from msc.dto.custom_types import NOT_SET, DateTimeUTC, TagsCommaSeperatedStringToList
 from msc.models import Server
 from msc.services import server_service
 
@@ -119,7 +119,7 @@ class ServersGetInputDto(BaseDto):
     page_size: Optional[conint(ge=10, le=30)] = 10
     search_query: Optional[str] = None
     country_code: Optional[str] = None
-    # tags: Optional[conlist(str, min_items=1, max_items=5)] = None
+    tags: TagsCommaSeperatedStringToList = None
 
 
 class GetServerDto(ServerDto):

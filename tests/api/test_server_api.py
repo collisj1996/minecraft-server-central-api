@@ -286,6 +286,43 @@ def test_update_server_validation_no_ip_address(
     )
 
 
+def test_server_search(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+    test_client: TestClient,
+):
+    """Tests searching for servers"""
+
+    config.development_mode = True
+
+    response = test_client.get(
+        "/servers",
+        params={
+            "search_query": "colcraft",
+        },
+    )
+
+    assert response.status_code == 200
+    body = get_response_body(response)
+    assert body["total_servers"] == 2
+    assert len(body["servers"]) == 2
+
+    response = test_client.get(
+        "/servers",
+        params={
+            "tags": "tekkit",
+        },
+    )
+
+    assert response.status_code == 200
+    body = get_response_body(response)
+    assert body["total_servers"] == 1
+    assert len(body["servers"]) == 1
+    assert body["servers"][0]["id"] == str(server_colcraft.id)
+
+
 @pytest.mark.skip(reason="TODO: fix this test")
 def test_server_test_votifier(
     session,

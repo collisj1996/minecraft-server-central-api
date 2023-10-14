@@ -113,6 +113,7 @@ def get_servers(
         page_size=query_params.page_size,
         search_query=query_params.search_query,
         country_code=query_params.country_code,
+        tags=query_params.tags,
     )
 
     dto = ServersGetOutputDto(

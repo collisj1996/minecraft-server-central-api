@@ -29,7 +29,7 @@ def server_colcraft(session, user_jack: User):
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
         banner_base64=image_base64_string,
-        tags=["Survival", "Creative", "Skyblock"],
+        tags=["survival", "pve", "tekkit", "mcmmo"],
     )
 
     return server
@@ -56,7 +56,7 @@ def server_colcraft_2(session, user_jack: User):
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
         banner_base64=image_base64_string,
-        tags=["Survival", "Creative", "Skyblock"],
+        tags=["survival", "pve", "pvp", "skyblock"],
     )
 
     return server
@@ -83,7 +83,7 @@ def server_hypixel(session, user_alan: User):
         website="https://www.myserver.com",
         discord="https://discord.gg/myserver",
         banner_base64=image_base64_string,
-        tags=["Survival", "Creative", "Skyblock"],
+        tags=["creative", "pvp", "skyblock", "minigames"],
     )
 
     return server
@@ -192,7 +192,7 @@ def server_colcraft_history(
                         db=session,
                         server_id=server_colcraft.id,
                         client_ip=str(uuid4()),
-                        minecraft_username=f"test{i}",
+                        minecraft_username=str(uuid4()),
                     )
 
                 data_point = ServerHistory(

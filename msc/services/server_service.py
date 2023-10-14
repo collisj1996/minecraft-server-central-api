@@ -16,8 +16,6 @@ from sqlalchemy import (
     cast,
     Integer,
     Float,
-    case,
-    extract,
     Text,
     Numeric,
 )
@@ -25,7 +23,7 @@ from sqlalchemy.orm import Session
 
 from msc.dto.custom_types import NOT_SET
 from msc.errors import BadRequest, NotFound
-from msc.models import Server, Tag, Vote, ServerHistory, ServerHistoryOld
+from msc.models import Server, Tag, Vote, ServerHistory
 from msc.models.server import INDEX_REMOVE_CHARS
 from msc.services import ping_service
 from msc.utils.file_utils import _get_checksum
@@ -72,7 +70,7 @@ def get_servers(
     page_size: int = 10,
     search_query: Optional[str] = None,
     country_code: Optional[str] = None,  # TODO: Add tests for this
-    tags: Optional[List[str]] = None,  # TODO: Add tests for this
+    tags: Optional[List[str]] = None,
 ):
     """Returns all servers"""
 
@@ -108,8 +106,8 @@ def get_servers(
         filter_queries.append(Server.country_code == country_code)
 
     if tags:
-        # TODO:
-        pass
+        # TODO: make tag names unique in the database
+        filter_queries.append(Tag.name.in_(tags))
 
     # Get the current month and year
     now = datetime.now()
@@ -132,20 +130,33 @@ def get_servers(
     )
 
     # Get servers and vote count
-    servers_query = (
-        db.query(
-            Server,
-            func.count(Vote.id).label("total_votes"),
-            func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
-            func.rank()
-            .over(
-                order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
-                partition_by=None,
-            )
-            .label("rank"),
+    servers_query = db.query(
+        Server,
+        func.count(Vote.id).label("total_votes"),
+        func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
+        func.rank()
+        .over(
+            order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
+            partition_by=None,
         )
-        .outerjoin(Vote, Server.id == Vote.server_id)
-        .outerjoin(subquery, Server.id == subquery.c.server_id)
+        .label("rank"),
+    )
+
+    if tags:
+        servers_query = servers_query.join(
+            Tag,
+            Server.id == Tag.server_id,
+        )
+
+    servers_query = (
+        servers_query.outerjoin(
+            Vote,
+            Server.id == Vote.server_id,
+        )
+        .outerjoin(
+            subquery,
+            Server.id == subquery.c.server_id,
+        )
         .filter(
             Server.flagged_for_deletion == False,
             *filter_queries,
@@ -162,7 +173,6 @@ def get_servers(
 
     # get total number of servers
     # This needs to reflect the total number of servers in the query
-    # TODO: Always test this
     total_servers = servers_query.count()
 
     return GetServersInfo(

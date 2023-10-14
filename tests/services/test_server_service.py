@@ -62,15 +62,24 @@ def test_get_servers_with_votes(
 
     # 2 votes for colcraft
     vote_service.add_vote(
-        db=session, server_id=server_colcraft.id, client_ip="192.168.0.1"
+        db=session,
+        server_id=server_colcraft.id,
+        client_ip="192.168.0.1",
+        minecraft_username="test",
     )
     vote_service.add_vote(
-        db=session, server_id=server_colcraft.id, client_ip="11.11.11.11"
+        db=session,
+        server_id=server_colcraft.id,
+        client_ip="11.11.11.11",
+        minecraft_username="test_2",
     )
 
     # 1 vote for hypixel
     vote_service.add_vote(
-        db=session, server_id=server_hypixel.id, client_ip="192.168.0.1"
+        db=session,
+        server_id=server_hypixel.id,
+        client_ip="192.168.0.1",
+        minecraft_username="test",
     )
 
     servers_info: GetServersInfo = server_service.get_servers(
@@ -102,10 +111,16 @@ def test_get_servers_with_votes_order(
 
     # 2 votes for colcraft
     vote_service.add_vote(
-        db=session, server_id=server_colcraft.id, client_ip="192.168.0.1"
+        db=session,
+        server_id=server_colcraft.id,
+        client_ip="192.168.0.1",
+        minecraft_username="test",
     )
     vote_service.add_vote(
-        db=session, server_id=server_colcraft.id, client_ip="11.11.11.11"
+        db=session,
+        server_id=server_colcraft.id,
+        client_ip="11.11.11.11",
+        minecraft_username="test_2",
     )
 
     servers_info: GetServersInfo = server_service.get_servers(
@@ -126,16 +141,19 @@ def test_get_servers_with_votes_order(
         db=session,
         server_id=server_hypixel.id,
         client_ip="192.168.0.1",
+        minecraft_username="test",
     )
     vote_service.add_vote(
         db=session,
         server_id=server_hypixel.id,
         client_ip="192.168.0.2",
+        minecraft_username="test_2",
     )
     vote_service.add_vote(
         db=session,
         server_id=server_hypixel.id,
         client_ip="192.168.0.3",
+        minecraft_username="test_3",
     )
 
     servers_info: GetServersInfo = server_service.get_servers(
@@ -312,7 +330,8 @@ def _create_multiple_servers_for_pagination(session):
         for _ in range(i):
             vote = Vote(
                 server_id=server.id,
-                client_ip_address="1.2.3.4",
+                client_ip_address=f"1.2.3.{i}",
+                minecraft_username=f"test{i}",
             )
             session.add(vote)
 
@@ -378,8 +397,8 @@ def test_update_server_all_properties(
     assert updated_server.website == "https://www.updated.com"
     assert updated_server.discord == "https://discord.gg/updated"
     assert updated_server.banner_checksum is None
-    for updated_gameplay in [g.name for g in updated_server.gameplay]:
-        assert updated_gameplay in [
+    for updated_tags in [g.name for g in updated_server.tags]:
+        assert updated_tags in [
             "Survival",
             "Creative",
             "Skyblock",
@@ -657,6 +676,7 @@ def test_get_server_rank(
             db=session,
             server_id=server_colcraft.id,
             client_ip=f"127.0.0.{i}",
+            minecraft_username=f"test{i}",
         )
 
     for i in range(1, 3):
@@ -664,6 +684,7 @@ def test_get_server_rank(
             db=session,
             server_id=server_hypixel.id,
             client_ip=f"127.0.0.{i}",
+            minecraft_username=f"test{i}",
         )
 
     for i in range(1, 2):
@@ -671,6 +692,7 @@ def test_get_server_rank(
             db=session,
             server_id=server_colcraft_2.id,
             client_ip=f"127.0.0.{i}",
+            minecraft_username=f"test{i}",
         )
 
     colcraft_rank = server_service.get_server_rank(
@@ -760,3 +782,179 @@ def test_servers_search_query(
 
     assert len(get_servers_search.servers) == 2
     assert get_servers_search.total_servers == 2
+
+
+def test_servers_search_query_tags(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+):
+    """Tests the servers search query"""
+
+    get_servers_no_tags = server_service.get_servers(
+        db=session,
+    )
+
+    assert len(get_servers_no_tags.servers) == 3
+    assert get_servers_no_tags.total_servers == 3
+
+    get_servers_search = server_service.get_servers(
+        db=session,
+        tags=["survival"],
+    )
+
+    assert len(get_servers_search.servers) == 2
+    assert get_servers_search.total_servers == 2
+    for server_info in get_servers_search.servers:
+        assert server_info.server.id in [server_colcraft.id, server_colcraft_2.id]
+
+    get_servers_search = server_service.get_servers(
+        db=session,
+        tags=["creative"],
+    )
+
+    assert len(get_servers_search.servers) == 1
+    assert get_servers_search.total_servers == 1
+    for server_info in get_servers_search.servers:
+        assert server_info.server.id in [server_hypixel.id]
+
+
+def test_servers_search_query_and_votes(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+):
+    """Tests the servers search query and votes"""
+
+    # 5 votes for colcraft
+    for i in range(1, 6):
+        vote_service.add_vote(
+            db=session,
+            server_id=server_colcraft.id,
+            client_ip=f"127.0.0.{i}",
+            minecraft_username=f"test{i}",
+        )
+
+    # 2 votes for colcraft_2
+    for i in range(1, 3):
+        vote_service.add_vote(
+            db=session,
+            server_id=server_colcraft_2.id,
+            client_ip=f"127.0.0.{i}",
+            minecraft_username=f"test{i}",
+        )
+
+    # 1 vote for hypixel
+    vote_service.add_vote(
+        db=session,
+        server_id=server_hypixel.id,
+        client_ip="127.0.0.1",
+        minecraft_username="test",
+    )
+
+    get_servers_no_search = server_service.get_servers(
+        db=session,
+    )
+
+    assert len(get_servers_no_search.servers) == 3
+    assert get_servers_no_search.total_servers == 3
+
+    for server_info in get_servers_no_search.servers:
+        if server_info.server.id == server_colcraft.id:
+            assert server_info.total_votes == 5
+        elif server_info.server.id == server_colcraft_2.id:
+            assert server_info.total_votes == 2
+        elif server_info.server.id == server_hypixel.id:
+            assert server_info.total_votes == 1
+
+    get_servers_search = server_service.get_servers(
+        db=session,
+        search_query="colcraft",
+    )
+
+    assert len(get_servers_search.servers) == 2
+    assert get_servers_search.total_servers == 2
+
+    for server_info in get_servers_search.servers:
+        if server_info.server.id == server_colcraft.id:
+            assert server_info.total_votes == 5
+        elif server_info.server.id == server_colcraft_2.id:
+            assert server_info.total_votes == 2
+
+
+def test_servers_search_query_tags_and_votes(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+):
+    """"""
+
+    # 5 votes for colcraft
+    for i in range(1, 6):
+        vote_service.add_vote(
+            db=session,
+            server_id=server_colcraft.id,
+            client_ip=f"127.0.0.{i}",
+            minecraft_username=f"test{i}",
+        )
+
+    # 2 votes for colcraft_2
+    for i in range(1, 3):
+        vote_service.add_vote(
+            db=session,
+            server_id=server_colcraft_2.id,
+            client_ip=f"127.0.0.{i}",
+            minecraft_username=f"test{i}",
+        )
+
+    # 1 vote for hypixel
+    vote_service.add_vote(
+        db=session,
+        server_id=server_hypixel.id,
+        client_ip="127.0.0.1",
+        minecraft_username="test",
+    )
+
+    get_servers_no_search = server_service.get_servers(
+        db=session,
+    )
+
+    assert len(get_servers_no_search.servers) == 3
+    assert get_servers_no_search.total_servers == 3
+
+    for server_info in get_servers_no_search.servers:
+        if server_info.server.id == server_colcraft.id:
+            assert server_info.total_votes == 5
+        elif server_info.server.id == server_colcraft_2.id:
+            assert server_info.total_votes == 2
+        elif server_info.server.id == server_hypixel.id:
+            assert server_info.total_votes == 1
+
+    get_servers_search = server_service.get_servers(
+        db=session,
+        tags=["survival"],
+    )
+
+    assert len(get_servers_search.servers) == 2
+    assert get_servers_search.total_servers == 2
+
+    for server_info in get_servers_search.servers:
+        if server_info.server.id == server_colcraft.id:
+            assert server_info.total_votes == 5
+        elif server_info.server.id == server_colcraft_2.id:
+            assert server_info.total_votes == 2
+
+    get_servers_search = server_service.get_servers(
+        db=session,
+        tags=["creative"],
+    )
+
+    assert len(get_servers_search.servers) == 1
+    assert get_servers_search.total_servers == 1
+
+    for server_info in get_servers_search.servers:
+        if server_info.server.id == server_hypixel.id:
+            assert server_info.total_votes == 1

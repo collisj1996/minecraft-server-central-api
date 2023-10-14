@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from msc.dto.base import BaseDto
+from msc.constants import QUERY_STRING_TAG_LIST_MAX
 
 
 class NotSet(BaseDto):
@@ -35,3 +36,22 @@ class DateTimeIsoStr(datetime):
         if isinstance(value, str):
             return datetime.fromisoformat(value)
         return value
+
+
+class TagsCommaSeperatedStringToList(str):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value):
+        tag_list = []
+        if isinstance(value, str):
+            tag_list = value.split(",")
+            if len(tag_list) > QUERY_STRING_TAG_LIST_MAX:
+                raise ValueError(
+                    f"Tag list cannot be longer than {QUERY_STRING_TAG_LIST_MAX}"
+                )
+        else:
+            return value
+        return tag_list

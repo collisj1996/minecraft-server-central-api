@@ -19,6 +19,7 @@ def votes_colcraft_20_this_month(
             db=session,
             server_id=server_colcraft.id,
             client_ip=f"127.0.0.{i}",
+            minecraft_username=f"test{i}",
         )
 
 
@@ -34,4 +35,5 @@ def votes_colcraft_20_last_month(session, server_colcraft: Server):
                 db=session,
                 server_id=server_colcraft.id,
                 client_ip=f"127.0.0.{i}",
+                minecraft_username=f"test{i}",
             )

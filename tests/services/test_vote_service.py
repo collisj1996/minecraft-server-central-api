@@ -15,6 +15,7 @@ def test_add_vote(session, server_colcraft: Server):
         db=session,
         server_id=server_colcraft.id,
         client_ip="127.0.0.1",
+        minecraft_username="test",
     )
 
     assert vote
@@ -92,4 +93,5 @@ def test_vote_for_server_flagged_for_deletion(session, server_colcraft: Server):
             db=session,
             server_id=server_colcraft.id,
             client_ip="1.1.1.1",
+            minecraft_username="test",
         )
