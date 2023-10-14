@@ -22,6 +22,7 @@ from .api import (
     user_api,
     util_api,
     vote_api,
+    tag_api,
 )
 from .jobs.jobs import scheduler
 
@@ -139,3 +140,4 @@ def register_routers(app):
     app.include_router(user_api.router, tags=["user"])
     app.include_router(auth_api.router, tags=["auth"])
     app.include_router(auction_api.router, tags=["auction"])
+    app.include_router(tag_api.router, tags=["tag"])
