@@ -3,7 +3,7 @@ import math
 from fastapi.testclient import TestClient
 
 from msc.config import config
-from msc.models import Auction, User
+from msc.models import Auction, User, Server
 
 from .utils import get_auth_header, get_response_body
 
@@ -83,3 +83,42 @@ def test_get_auctions(
             assert body[j - 1]["auction"]["id"] == str(
                 historical_auctions_with_bids[index].id
             )
+
+
+def test_get_bid(
+    session,
+    test_client: TestClient,
+    user_jack: User,
+    auction_with_bids: Auction,
+    server_colcraft: Server,
+):
+    config.development_mode = True
+
+    response = test_client.get(
+        f"/auctions/{auction_with_bids.id}/servers/{server_colcraft.id}/bid",
+        headers=get_auth_header(user_jack.id),
+    )
+    assert response.status_code == 200
+    body = get_response_body(response)
+
+    assert body["auction_id"] == str(auction_with_bids.id)
+    assert body["user_id"] == str(user_jack.id)
+    assert body["server_id"] == str(server_colcraft.id)
+    assert body["server_name"] == server_colcraft.name
+    assert body["amount"] == 600
+
+
+def test_get_bid_invalid_user(
+    session,
+    test_client: TestClient,
+    auction_with_bids: Auction,
+    server_colcraft: Server,
+    user_alan: User,
+):
+    config.development_mode = True
+
+    response = test_client.get(
+        f"/auctions/{auction_with_bids.id}/servers/{server_colcraft.id}/bid",
+        headers=get_auth_header(user_alan.id),
+    )
+    assert response.status_code == 404

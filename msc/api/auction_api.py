@@ -133,6 +133,28 @@ def create_bid(
     return AuctionBidDto.from_service(auction_bid)
 
 
+@router.get("/auctions/{auction_id}/servers/{server_id}/bid")
+@auth_required
+def get_bid(
+    request: Request,
+    auction_id: str,
+    server_id: str,
+    db: Session = Depends(get_db),
+) -> AuctionBidDto:
+    """Endpoint for adding a bid to an auction"""
+
+    user_id = request.state.user_id
+
+    auction_bid = auction_service.get_bid(
+        db=db,
+        user_id=UUID(user_id),
+        auction_id=auction_id,
+        server_id=server_id,
+    )
+
+    return AuctionBidDto.from_service(auction_bid)
+
+
 @router.get("/auctions/{auction_id}/bids")
 @auth_required
 def get_bids(

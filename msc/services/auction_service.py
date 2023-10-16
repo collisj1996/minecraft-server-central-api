@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT
 from msc.errors import BadRequest, NotFound, Unauthorized
 from msc.models import Auction, AuctionBid, Server, User
+from msc.services import server_service
 
 
 class InvalidBidAmount(BadRequest):
@@ -22,6 +23,10 @@ class InvalidBid(BadRequest):
 
 class OnlyOneCurrentAuctionBadRequest(BadRequest):
     """Raised when there is already a current auction"""
+
+
+class ServerNotEligibleForAuctionBadRequest(BadRequest):
+    """Raised when the server is not eligible for auction"""
 
 
 @dataclass
@@ -108,6 +113,12 @@ def add_auction_bid(
     if not auction.is_current_auction:
         raise InvalidBid("This auction is not the currently active auction")
 
+    # TODO: Add test for is_eligible_for_auction
+    if not server_service.is_eligible_for_auction(server=server):
+        raise ServerNotEligibleForAuctionBadRequest(
+            "This server is not eligible for sponsored auction"
+        )
+
     now = datetime.now()
 
     if now < auction.bidding_starts_at:
@@ -116,35 +127,40 @@ def add_auction_bid(
     if now > auction.bidding_ends_at:
         raise InvalidBid("Bidding has ended")
 
-    user_max_bid = (
+    server_bid = (
         db.query(AuctionBid)
         .filter(
             AuctionBid.auction_id == auction_id,
             AuctionBid.user_id == user_id,
             AuctionBid.server_id == server_id,
         )
-        .order_by(
-            AuctionBid.amount.desc(),
+        .one_or_none()
+    )
+
+    if server_bid is not None and amount <= server_bid.amount:
+        raise InvalidBidAmount("Bid amount must be greater than your current bid")
+
+    response = None
+
+    if server_bid:
+        server_bid.amount = amount
+        server_bid.updated_at = now
+        response = server_bid
+    else:
+        auction_bid = AuctionBid(
+            auction_id=auction_id,
+            user_id=user_id,
+            server_id=server_id,
+            server_name=server.name,
+            amount=amount,
         )
-        .first()
-    )
-
-    if user_max_bid is not None and amount <= user_max_bid.amount:
-        raise InvalidBidAmount("Bid amount must be greater than your current max bid")
-
-    auction_bid = AuctionBid(
-        auction_id=auction_id,
-        user_id=user_id,
-        server_id=server_id,
-        server_name=server.name,
-        amount=amount,
-    )
+        db.add(auction_bid)
+        response = auction_bid
 
     with _handle_db_errors():
-        db.add(auction_bid)
         db.commit()
 
-    return auction_bid
+    return response
 
 
 def get_current_auction(db: Session) -> GetAuctionInfo:
@@ -179,32 +195,10 @@ def _get_auction(db: Session, auction_id: UUID) -> GetAuctionInfo:
     if auction is None:
         raise NotFound("Auction not found")
 
-    subquery = (
-        db.query(
-            AuctionBid.server_id,
-            func.max(AuctionBid.amount).label("max_bid"),
-        )
-        # TODO: Add test for flagged_for_deletion
-        .join(Server, Server.id == AuctionBid.server_id)
-        .filter(
-            AuctionBid.auction_id == auction_id,
-            Server.flagged_for_deletion == False,
-        )
-        .group_by(AuctionBid.server_id)
-        .subquery()
-    )
-
     bids = (
         db.query(AuctionBid)
-        .join(
-            subquery,
-            and_(
-                AuctionBid.server_id == subquery.c.server_id,
-                AuctionBid.amount == subquery.c.max_bid,
-            ),
-        )
         .filter(AuctionBid.auction_id == auction_id)
-        .order_by(subquery.c.max_bid.desc())
+        .order_by(AuctionBid.amount.desc())
         .limit(auction.sponsored_slots)
         .all()
     )
@@ -242,39 +236,10 @@ def get_auctions(
 
     auction_ids = [auction.id for auction in auctions]
 
-    subquery = (
-        db.query(
-            AuctionBid.auction_id,
-            AuctionBid.server_id,
-            func.max(AuctionBid.amount).label("max_bid"),
-        )
-        .join(
-            Server,
-            Server.id == AuctionBid.server_id,
-        )
-        # TODO: Add test for flagged_for_deletion
-        .filter(
-            AuctionBid.auction_id.in_(auction_ids),
-            Server.flagged_for_deletion == False,
-        )
-        .group_by(
-            AuctionBid.auction_id,
-            AuctionBid.server_id,
-        )
-        .subquery()
-    )
-
     bids = (
         db.query(AuctionBid)
-        .join(
-            subquery,
-            and_(
-                AuctionBid.auction_id == subquery.c.auction_id,
-                AuctionBid.amount == subquery.c.max_bid,
-            ),
-        )
         .filter(AuctionBid.auction_id.in_(auction_ids))
-        .order_by(subquery.c.max_bid.desc())
+        .order_by(AuctionBid.amount.desc())
         .all()
     )
 
@@ -360,3 +325,40 @@ def change_current_auction(
     auction_info = _get_auction(db=db, auction_id=auction.id)
 
     return auction_info
+
+
+def get_bid(db: Session, user_id: UUID, auction_id: UUID, server_id: UUID):
+    """Gets a bid from the database"""
+
+    user = db.query(User).filter(User.id == user_id).one_or_none()
+
+    if user is None:
+        raise NotFound("User not found")
+
+    auction = db.query(Auction).filter(Auction.id == auction_id).one_or_none()
+
+    if auction is None:
+        raise NotFound("Auction not found")
+
+    server = db.query(Server).filter(Server.id == server_id).one_or_none()
+
+    if server is None:
+        raise NotFound("Server not found")
+
+    if server.user_id != user_id:
+        raise NotFound("Bid not found")
+
+    bid = (
+        db.query(AuctionBid)
+        .filter(
+            AuctionBid.auction_id == auction_id,
+            AuctionBid.user_id == user_id,
+            AuctionBid.server_id == server_id,
+        )
+        .one_or_none()
+    )
+
+    if bid is None:
+        raise NotFound("Bid not found")
+
+    return bid

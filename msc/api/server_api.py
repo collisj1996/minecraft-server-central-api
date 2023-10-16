@@ -19,6 +19,8 @@ from msc.dto.server_dto import (
     ServerHistoryDto,
     ServerTestVotifierInputDto,
     ServersSponsoredGetOutputDto,
+    ServersMineGetInputDto,
+    ServerGetInputDto,
 )
 from msc.services import ping_service, server_service, vote_service
 from msc.utils import api_utils
@@ -68,6 +70,7 @@ def create_server(
 @auth_required
 def get_my_servers(
     request: Request,
+    query_params: ServersMineGetInputDto = Depends(),
     db: Session = Depends(get_db),
 ) -> ServersMineOutputDto:
     """Endpoint for getting all servers"""
@@ -77,6 +80,7 @@ def get_my_servers(
     my_servers = server_service.get_my_servers(
         db=db,
         user_id=user_id,
+        include_auction_eligibility=query_params.include_auction_eligibility,
     )
 
     dto = ServersMineOutputDto(
@@ -102,6 +106,7 @@ def get_sponsored_servers(
 @router.get("/servers/{server_id}")
 def get_server(
     server_id: str,
+    query_params: ServerGetInputDto = Depends(),
     db: Session = Depends(get_db),
 ) -> GetServerDto:
     """Endpoint for getting a server"""
@@ -109,6 +114,7 @@ def get_server(
     server = server_service.get_server(
         db=db,
         server_id=server_id,
+        include_auction_eligibility=query_params.include_auction_eligibility,
     )
 
     return GetServerDto.from_service(server)

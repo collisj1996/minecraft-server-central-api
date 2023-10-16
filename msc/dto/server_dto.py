@@ -28,6 +28,11 @@ def _get_server_banner_url(
     )
 
 
+class AuctionEligibilityDto(BaseDto):
+    has_eligible_uptime: bool
+    has_eligible_server_age: bool
+
+
 class ServerDto(BaseDto):
     id: UUID
     name: str
@@ -126,6 +131,7 @@ class GetServerDto(ServerDto):
     rank: int
     total_votes: int
     votes_this_month: int
+    auction_eligibility: Optional[AuctionEligibilityDto] = None
 
     @classmethod
     def from_service(
@@ -164,6 +170,12 @@ class GetServerDto(ServerDto):
             web_store=server_info.server.web_store,
             video_url=server_info.server.video_url,
             uptime=server_info.server.uptime,
+            auction_eligibility=AuctionEligibilityDto(
+                has_eligible_uptime=server_info.auction_eligibility.uptime,
+                has_eligible_server_age=server_info.auction_eligibility.server_age,
+            )
+            if server_info.auction_eligibility
+            else None,
         )
 
 
@@ -274,3 +286,12 @@ class ServerGetHistoryInputDto(BaseDto):
 
 class ServerTestVotifierInputDto(BaseDto):
     minecraft_username: str
+
+
+class ServerGetInputDto(BaseDto):
+    include_auction_eligibility: Optional[bool] = False
+
+
+class ServersMineGetInputDto(BaseDto):
+    include_auction_eligibility: Optional[bool] = False
+    minimal: Optional[bool] = False

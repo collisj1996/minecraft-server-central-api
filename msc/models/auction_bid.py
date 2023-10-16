@@ -29,11 +29,17 @@ class AuctionBid(Base):
     server_name = Column(Text, nullable=False)
     amount = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
 
     __table_args__ = (
         UniqueConstraint(
             "id",
             name="auction_bid_unique_id",
+        ),
+        UniqueConstraint(
+            "auction_id",
+            "server_id",
+            name="auction_bid_unique_auction_id_server_id",
         ),
         ForeignKeyConstraint(
             ["auction_id"],
@@ -54,11 +60,6 @@ class AuctionBid(Base):
             "amount > 0",
             name="auction_bid_amount_greater_than_zero",
         ),
-        # TODO: Check constraint only work with the row in isolation, consider adding a trigger
-        # CheckConstraint(
-        #     "amount > (SELECT minimum_bid FROM auction WHERE id = auction_id)"
-        # ),
-        # TODO: When getting the big positions for a given auction, only get the highest bid for each server
     )
 
     def __init__(
@@ -75,4 +76,6 @@ class AuctionBid(Base):
         self.server_name = server_name
         self.amount = amount
 
-        self.created_at = datetime.utcnow()
+        now = datetime.utcnow()
+        self.created_at = now
+        self.updated_at = now

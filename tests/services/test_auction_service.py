@@ -1,5 +1,5 @@
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 import freezegun
@@ -67,6 +67,58 @@ def test_bid_on_auction(
         .filter(AuctionBid.user_id == user_jack.id)
         .filter(AuctionBid.server_id == server_colcraft.id)
         .one_or_none()
+    )
+
+
+@pytest.mark.nomockgeteligibility
+def test_bid_on_auction_eligibility(
+    session,
+    user_jack: User,
+    server_colcraft: Server,
+    auction_inside_bidding_period: Auction,
+):
+    # not eligible for auction
+
+    server_colcraft.uptime = 89
+    server_colcraft.created_at = datetime.utcnow() - timedelta(days=29)
+
+    session.commit()
+
+    with pytest.raises(auction_service.ServerNotEligibleForAuctionBadRequest) as e:
+        auction_service.add_auction_bid(
+            db=session,
+            auction_id=auction_inside_bidding_period.id,
+            user_id=user_jack.id,
+            server_id=server_colcraft.id,
+            amount=100,
+        )
+
+    assert e.value.message == "This server is not eligible for sponsored auction"
+
+    server_colcraft.uptime = 90
+    server_colcraft.created_at = datetime.utcnow() - timedelta(days=30)
+
+    session.commit()
+
+    auction_service.add_auction_bid(
+        db=session,
+        auction_id=auction_inside_bidding_period.id,
+        user_id=user_jack.id,
+        server_id=server_colcraft.id,
+        amount=100,
+    )
+
+    server_colcraft.uptime = 91
+    server_colcraft.created_at = datetime.utcnow() - timedelta(days=31)
+
+    session.commit()
+
+    auction_service.add_auction_bid(
+        db=session,
+        auction_id=auction_inside_bidding_period.id,
+        user_id=user_jack.id,
+        server_id=server_colcraft.id,
+        amount=200,
     )
 
 
@@ -209,7 +261,7 @@ def test_bid_on_auction_with_amount_less_then_max_bid(
             amount=50,
         )
 
-    assert e.value.message == "Bid amount must be greater than your current max bid"
+    assert e.value.message == "Bid amount must be greater than your current bid"
 
 
 def test_add_bid_before_bidding_period(
@@ -291,7 +343,17 @@ def test_add_multiple_bids(
         .filter(AuctionBid.user_id == user_jack.id)
         .filter(AuctionBid.server_id == server_colcraft.id)
         .count()
-        == 3
+        == 1
+    )
+
+    assert (
+        session.query(AuctionBid)
+        .filter(AuctionBid.auction_id == auction_inside_bidding_period.id)
+        .filter(AuctionBid.user_id == user_jack.id)
+        .filter(AuctionBid.server_id == server_colcraft.id)
+        .one_or_none()
+        .amount
+        == 300
     )
 
 

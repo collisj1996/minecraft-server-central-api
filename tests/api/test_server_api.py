@@ -408,3 +408,66 @@ def test_get_sponsored(
         assert len(body) == 2
         assert body[0]["id"] == str(server_colcraft_2.id)  # slot 1
         assert body[1]["id"] == str(server_colcraft.id)  # slot 2
+
+
+def test_get_server_include_eligibility(
+    session,
+    test_client: TestClient,
+    server_colcraft: Server,
+    user_jack: User,
+):
+    config.development_mode = True
+
+    response = test_client.get(
+        f"/servers/{str(server_colcraft.id)}",
+        params={},
+    )
+
+    assert response.status_code == 200
+    body = get_response_body(response)
+    assert body["id"] == str(server_colcraft.id)
+    assert body["auction_eligibility"] is None
+
+    response = test_client.get(
+        f"/servers/{str(server_colcraft.id)}",
+        params={
+            "include_auction_eligibility": True,
+        },
+    )
+
+    assert response.status_code == 200
+    body = get_response_body(response)
+    assert body["id"] == str(server_colcraft.id)
+    assert body["auction_eligibility"] is not None
+
+
+def test_get_my_servers_include_eligibility(
+    session,
+    test_client: TestClient,
+    server_colcraft: Server,
+    user_jack: User,
+):
+    config.development_mode = True
+
+    response = test_client.get(
+        "/servers/mine",
+        headers=get_auth_header(user_jack.id),
+        params={},
+    )
+
+    assert response.status_code == 200
+    body = get_response_body(response)
+    assert body[0]["id"] == str(server_colcraft.id)
+    assert body[0]["auction_eligibility"] is None
+
+    response = test_client.get(
+        "/servers/mine",
+        headers=get_auth_header(user_jack.id),
+        params={
+            "include_auction_eligibility": True,
+        },
+    )
+    assert response.status_code == 200
+    body = get_response_body(response)
+    assert body[0]["id"] == str(server_colcraft.id)
+    assert body[0]["auction_eligibility"] is not None

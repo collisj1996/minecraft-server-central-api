@@ -2,7 +2,7 @@ import base64
 from io import BytesIO
 from uuid import uuid4
 import freezegun
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -1105,3 +1105,62 @@ def test_get_sponsored_servers_scoped_to_year_and_month(
         assert sponsored_servers[0].server.id == server_hypixel.id  # slot 1
         assert sponsored_servers[1].server.id == server_colcraft_2.id  # slot 2
         assert sponsored_servers[2].server.id == server_colcraft.id  # slot 3
+
+
+@pytest.mark.nomockgeteligibility
+def test_get_auction_eligibility(session, server_colcraft: Server):
+    """Tests getting auction eligibility"""
+
+    # set server uptime to 89%
+    server_colcraft.uptime = 89
+    # set created_at to 29 days ago
+    server_colcraft.created_at = datetime.utcnow() - timedelta(days=29)
+
+    session.commit()
+
+    elegibility = server_service._get_auction_eligibility(
+        server=server_colcraft,
+    )
+    is_eligible = server_service.is_eligible_for_auction(
+        server=server_colcraft,
+    )
+
+    assert not elegibility.uptime
+    assert not elegibility.server_age
+    assert not is_eligible
+
+    # set server uptime to 90%
+    server_colcraft.uptime = 90
+    # set created_at to 30 days ago
+    server_colcraft.created_at = datetime.utcnow() - timedelta(days=30)
+
+    session.commit()
+
+    elegibility = server_service._get_auction_eligibility(
+        server=server_colcraft,
+    )
+    is_eligible = server_service.is_eligible_for_auction(
+        server=server_colcraft,
+    )
+
+    assert elegibility.uptime
+    assert elegibility.server_age
+    assert is_eligible
+
+    # set server uptime to 91%
+    server_colcraft.uptime = 91
+    # set created_at to 31 days ago
+    server_colcraft.created_at = datetime.utcnow() - timedelta(days=31)
+
+    session.commit()
+
+    elegibility = server_service._get_auction_eligibility(
+        server=server_colcraft,
+    )
+    is_eligible = server_service.is_eligible_for_auction(
+        server=server_colcraft,
+    )
+
+    assert elegibility.uptime
+    assert elegibility.server_age
+    assert is_eligible

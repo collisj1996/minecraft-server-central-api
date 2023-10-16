@@ -41,11 +41,18 @@ def _handle_db_errors():
 
 
 @dataclass
+class ServerAuctionEligibility:
+    uptime: bool
+    server_age: bool
+
+
+@dataclass
 class GetServerInfo:
     server: Server
     votes_this_month: int
     total_votes: int
     rank: int
+    auction_eligibility: Optional[ServerAuctionEligibility] = None
 
 
 @dataclass
@@ -239,6 +246,7 @@ def get_sponsored_servers(db: Session) -> List[GetServerInfo]:
 def get_server(
     db: Session,
     server_id: UUID,
+    include_auction_eligibility: bool = False,
 ) -> Server:
     # Get the current month and year
     now = datetime.now()
@@ -282,17 +290,24 @@ def get_server(
 
     rank = get_server_rank(db=db, server=server_and_votes[0])
 
+    auction_eligibilty = None
+
+    if include_auction_eligibility:
+        auction_eligibilty = _get_auction_eligibility(server=server_and_votes[0])
+
     return GetServerInfo(
         server=server_and_votes[0],
         votes_this_month=server_and_votes[2],
         total_votes=server_and_votes[1],
         rank=rank,
+        auction_eligibility=auction_eligibilty,
     )
 
 
 def get_my_servers(
     db: Session,
     user_id: UUID,
+    include_auction_eligibility: bool = False,
 ):
     """Returns all servers owned by a user with vote count and no pagination"""
 
@@ -354,6 +369,9 @@ def get_my_servers(
             votes_this_month=my_server[2],
             total_votes=my_server[1],
             rank=get_server_rank(db=db, server=my_server[0]),
+            auction_eligibility=_get_auction_eligibility(server=my_server[0])
+            if include_auction_eligibility
+            else None,
         )
         for my_server in my_servers_result
     ]
@@ -779,3 +797,38 @@ def get_server_rank(
     )
 
     return rank
+
+
+def _get_auction_eligibility(server: Server) -> ServerAuctionEligibility:
+    """The rules for whether a server is eligible for auction are defined here
+    the results of each eligibility returned as a dataclass"""
+
+    # TODO: Add tests for this
+
+    uptime_threshold = 90
+    server_age_threshold = 30
+    has_eligible_uptime = False
+    has_eligible_server_age = False
+
+    server_uptime = server.uptime
+
+    if server_uptime >= uptime_threshold:
+        has_eligible_uptime = True
+
+    server_age = (datetime.now() - server.created_at).days
+
+    if server_age >= server_age_threshold:
+        has_eligible_server_age = True
+
+    return ServerAuctionEligibility(
+        uptime=has_eligible_uptime,
+        server_age=has_eligible_server_age,
+    )
+
+
+def is_eligible_for_auction(server: Server) -> bool:
+    """Returns whether a server is eligible for auction"""
+
+    auction_eligibility = _get_auction_eligibility(server=server)
+
+    return auction_eligibility.uptime and auction_eligibility.server_age
