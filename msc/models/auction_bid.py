@@ -30,6 +30,7 @@ class AuctionBid(Base):
     amount = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
+    payment_status = Column(Text, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(
@@ -40,6 +41,11 @@ class AuctionBid(Base):
             "auction_id",
             "server_id",
             name="auction_bid_unique_auction_id_server_id",
+        ),
+        UniqueConstraint(
+            "auction_id",
+            "amount",
+            name="auction_bid_unique_auction_id_amount",
         ),
         ForeignKeyConstraint(
             ["auction_id"],

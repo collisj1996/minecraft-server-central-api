@@ -201,7 +201,7 @@ def get_votes_this_month(
     """Gets the total number of votes for a server this month"""
 
     # Get the current month and year
-    now = datetime.now()
+    now = datetime.utcnow()
     month = now.month
     year = now.year
 

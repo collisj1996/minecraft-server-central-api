@@ -118,7 +118,7 @@ def get_servers(
         filter_queries.append(Tag.name.in_(tags))
 
     # Get the current month and year
-    now = datetime.now()
+    now = datetime.utcnow()
     month = now.month
     year = now.year
 
@@ -198,7 +198,7 @@ def get_sponsored_servers(db: Session) -> List[GetServerInfo]:
     """Returns all current sponsored servers in slot order"""
 
     # Get the current month and year
-    now = datetime.now()
+    now = datetime.utcnow()
     month = now.month
     year = now.year
 
@@ -249,7 +249,7 @@ def get_server(
     include_auction_eligibility: bool = False,
 ) -> Server:
     # Get the current month and year
-    now = datetime.now()
+    now = datetime.utcnow()
     month = now.month
     year = now.year
 
@@ -312,7 +312,7 @@ def get_my_servers(
     """Returns all servers owned by a user with vote count and no pagination"""
 
     # Get the current month and year
-    now = datetime.now()
+    now = datetime.utcnow()
     month = now.month
     year = now.year
 
@@ -535,7 +535,7 @@ def update_server(
         commit=False,
     )
 
-    server.updated_at = datetime.now()
+    server.updated_at = datetime.utcnow()
 
     with _handle_db_errors():
         db.commit()
@@ -661,7 +661,7 @@ def delete_server(
         raise BadRequest("You do not own this server")
 
     server.flagged_for_deletion = True
-    server.flagged_for_deletion_at = datetime.now()
+    server.flagged_for_deletion_at = datetime.utcnow()
 
     with _handle_db_errors():
         db.commit()
@@ -692,7 +692,7 @@ def get_server_history(
     if not server:
         raise NotFound("Server not found")
 
-    now = datetime.now()
+    now = datetime.utcnow()
     from_date = now - timedelta(days=30)
     to_date = now
 
@@ -744,7 +744,7 @@ def get_server_rank(
     Mainly for internal use"""
 
     # Get the current month and year
-    now = datetime.now()
+    now = datetime.utcnow()
     month = now.month
     year = now.year
 
@@ -815,7 +815,7 @@ def _get_auction_eligibility(server: Server) -> ServerAuctionEligibility:
     if server_uptime >= uptime_threshold:
         has_eligible_uptime = True
 
-    server_age = (datetime.now() - server.created_at).days
+    server_age = (datetime.utcnow() - server.created_at).days
 
     if server_age >= server_age_threshold:
         has_eligible_server_age = True

@@ -1,3 +1,5 @@
+from enum import Enum
+
 CDN_DOMAIN = "cdn.minecraftservercentral.com"
 
 ALLOWED_TAGS = [
@@ -41,3 +43,13 @@ MAX_AUCTIONS_PAGE_SIZE = 10
 SERVER_LIST_SERVICE_NAME = "MCSC"
 
 QUERY_STRING_TAG_LIST_MAX = 10
+
+
+class BidPaymentStatus(str, Enum):
+    """Enum for bid status"""
+
+    PAID = "Paid"
+    AWAITING_PAYMENT = "Awaiting Payment"
+    FORFEIT = "Forfeit"
+    AWAITING_RESPONSE = "Awaiting Response"
+    STANDBY = "Standby"

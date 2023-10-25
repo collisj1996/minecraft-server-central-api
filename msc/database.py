@@ -14,7 +14,7 @@ def get_url():
     return f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_database}"
 
 
-engine = create_engine(get_url())
+engine = create_engine(get_url(), connect_args={"options": "-c timezone=utc"})
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

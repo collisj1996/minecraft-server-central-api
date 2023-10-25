@@ -128,6 +128,44 @@ def ten_servers(session):
 
 
 @pytest.fixture
+def ten_more_servers(session):
+    """Returns ten servers and users"""
+
+    output = {
+        "servers_list": [],
+        "users_list": [],
+        "servers_map": {},
+        "users_map": {},
+    }
+
+    for i in range(11, 21):
+        user = user_service.add_user(
+            db=session,
+            user_id=uuid4(),
+            username=f"User {i}",
+            email=f"user{i}@gmail.com",
+        )
+
+        server = server_service.create_server(
+            db=session,
+            name=f"Server {i}",
+            user_id=user.id,
+            description="My Server Description",
+            java_ip_address=f"{i}.168.1.100",
+            java_port=8080,
+            country_code="GB",
+            tags=["Survival", "Creative", "Skyblock"],
+        )
+
+        output["servers_list"].append(server)
+        output["users_list"].append(user)
+        output["servers_map"][server.id] = server
+        output["users_map"][user.id] = user
+
+    return output
+
+
+@pytest.fixture
 def many_servers(session):
     """Returns many servers"""
 

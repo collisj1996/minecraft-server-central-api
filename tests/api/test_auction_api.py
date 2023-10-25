@@ -38,7 +38,7 @@ def test_create_auction(
     assert body["sponsored_slots"] == 10
 
 
-def test_get_auctions(
+def test_get_historical_auctions(
     session,
     test_client: TestClient,
     historical_auctions_with_bids: list[Auction],
@@ -58,10 +58,9 @@ def test_get_auctions(
 
     for i in range(1, num_pages + 1):
         response = test_client.get(
-            "/auctions",
+            "/auctions/historical",
             headers=get_auth_header(user_jack.id),
             params={
-                "include_current_auction": False,
                 "page": page,
                 "page_size": page_size,
             },

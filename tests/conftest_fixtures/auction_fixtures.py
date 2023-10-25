@@ -78,7 +78,7 @@ def auction_with_bids(
         auction_id=auction.id,
         user_id=servers[0].user_id,
         server_id=servers[0].id,
-        amount=200,
+        amount=210,
     )
 
     auction_service.add_auction_bid(
@@ -118,7 +118,7 @@ def auction_with_bids(
         auction_id=auction.id,
         user_id=servers[4].user_id,
         server_id=servers[4].id,
-        amount=500,
+        amount=525,
     )
 
     auction_service.add_auction_bid(
@@ -134,7 +134,7 @@ def auction_with_bids(
         auction_id=auction.id,
         user_id=servers[6].user_id,
         server_id=servers[6].id,
-        amount=1000,
+        amount=1050,
     )
 
     auction_service.add_auction_bid(

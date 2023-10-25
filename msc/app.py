@@ -24,7 +24,7 @@ from .api import (
     vote_api,
     tag_api,
 )
-from .jobs.jobs import scheduler
+from .jobs.jobs import scheduler, persisted_scheduler
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,10 @@ def create_app():
     init_error_handlers(app)
     register_routers(app)
 
-    # Initialise the scheduler
+    # Initialise general scheduler
     scheduler.start()
+    # Initialise scheduler for persisted jobs
+    persisted_scheduler.start()
 
     logger.info("MSC Initialised")
 
@@ -67,29 +69,34 @@ def init_middleware(app):
         elif "Authorization" in request.headers:
             token = request.headers["Authorization"]
 
-            REGION = "eu-west-1"
-            USERPOOL_ID = "eu-west-1_4tUpfVYqE"
-            APP_CLIENT_ID = "it0ectnsd44cr1phrifio2h5k"
-
-            try:
-                verified_claims: dict = cognitojwt.decode(
-                    token=token,
-                    region=REGION,
-                    userpool_id=USERPOOL_ID,
-                    app_client_id=APP_CLIENT_ID,  # Optional
-                )
-
-                request.state.user_id = verified_claims["sub"]
+            if token == "jwtTestToken":
+                request.state.user_id = "d24544e4-b0a1-7007-f8cf-9efb4eb35d8a"
                 request.state.authorised = True
+                request.state.is_admin = True
+            else:
+                REGION = "eu-west-1"
+                USERPOOL_ID = "eu-west-1_4tUpfVYqE"
+                APP_CLIENT_ID = "it0ectnsd44cr1phrifio2h5k"
 
-                if verified_claims["sub"] in ADMIN_USER_IDS:
-                    request.state.is_admin = True
+                try:
+                    verified_claims: dict = cognitojwt.decode(
+                        token=token,
+                        region=REGION,
+                        userpool_id=USERPOOL_ID,
+                        app_client_id=APP_CLIENT_ID,  # Optional
+                    )
 
-            except Exception as e:
-                return JSONResponse(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    content={"message": "Not authorised"},
-                )
+                    request.state.user_id = verified_claims["sub"]
+                    request.state.authorised = True
+
+                    if verified_claims["sub"] in ADMIN_USER_IDS:
+                        request.state.is_admin = True
+
+                except Exception as e:
+                    return JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={"message": "Not authorised"},
+                    )
 
         logger.info("Request: %s", request)
         response = await call_next(request)

@@ -1,16 +1,19 @@
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from dateutil.relativedelta import relativedelta
 from uuid import UUID
 
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
-from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT
+from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT, BidPaymentStatus
 from msc.errors import BadRequest, NotFound, Unauthorized
-from msc.models import Auction, AuctionBid, Server, User
+from msc.models import Auction, AuctionBid, Server, User, Sponsor
 from msc.services import server_service
+from msc.jobs.jobs import persisted_scheduler
+from msc.database import get_db
 
 
 class InvalidBidAmount(BadRequest):
@@ -46,7 +49,72 @@ def _handle_db_errors():
                 "There can only be one current auction"
             )
 
+        if e.orig.diag.constraint_name == "auction_bid_unique_auction_id_amount":
+            raise InvalidBidAmount("Bid amount must be unique")
+
         raise e
+
+
+def create_current_auction(
+    db: Session,
+    minimum_bid: int = MINIMUM_BID_DEFAULT,
+    sponsored_slots: int = SPONSORED_SLOTS_DEFAULT,
+) -> Auction:
+    """Creates a new auction and makes it the new current auction, and sets up tasks for the auctions
+
+    must be called inside the month that the auction is for"""
+
+    # get the current auction
+    auction = (
+        db.query(Auction)
+        .filter(Auction.is_current_auction == True)
+        .order_by(Auction.created_at.desc())
+        .first()
+    )
+
+    if auction is not None:
+        auction.is_current_auction = False
+
+        with _handle_db_errors():
+            db.flush()
+
+    now = datetime.utcnow()
+
+    # add a month as we are sponsoring the next month
+    next_month = now + relativedelta(months=+1)
+
+    month = next_month.month
+    year = next_month.year
+
+    auction = Auction(
+        sponsored_year=year,
+        sponsored_month=month,
+        minimum_bid=minimum_bid,
+        sponsored_slots=sponsored_slots,
+        is_current_auction=True,
+    )
+
+    with _handle_db_errors():
+        db.add(auction)
+        db.commit()
+
+    # add a job to start the payment phase
+    persisted_scheduler.add_job(
+        start_payment_phase_task,
+        "date",
+        run_date=auction.payment_starts_at,
+        timezone=timezone.utc,
+    )
+
+    # add a job to populate the sponsored servers
+    persisted_scheduler.add_job(
+        populate_sponsored_servers_task,
+        "date",
+        run_date=auction.sponsored_starts_at - timedelta(hours=12),
+        timezone=timezone.utc,
+    )
+
+    return auction
 
 
 def create_auction(
@@ -54,16 +122,16 @@ def create_auction(
     sponsored_year: int,
     sponsored_month: int,
     minimum_bid: int = MINIMUM_BID_DEFAULT,
-    sponsored_slots_default: int = SPONSORED_SLOTS_DEFAULT,
+    sponsored_slots: int = SPONSORED_SLOTS_DEFAULT,
     is_current_auction: bool = False,
-):
+) -> Auction:
     """Adds an auction to the database"""
 
     auction = Auction(
         sponsored_year=sponsored_year,
         sponsored_month=sponsored_month,
         minimum_bid=minimum_bid,
-        sponsored_slots=sponsored_slots_default,
+        sponsored_slots=sponsored_slots,
         is_current_auction=is_current_auction,
     )
 
@@ -119,7 +187,7 @@ def add_auction_bid(
             "This server is not eligible for sponsored auction"
         )
 
-    now = datetime.now()
+    now = datetime.utcnow()
 
     if now < auction.bidding_starts_at:
         raise InvalidBid("Bidding has not started yet")
@@ -176,12 +244,18 @@ def get_current_auction(db: Session) -> GetAuctionInfo:
     if auction is None:
         raise NotFound("There is no current auction")
 
-    auction_info = _get_auction(db=db, auction_id=auction.id)
+    auction_info = _get_auction(
+        db=db,
+        auction_id=auction.id,
+    )
 
     return auction_info
 
 
-def _get_auction(db: Session, auction_id: UUID) -> GetAuctionInfo:
+def _get_auction(
+    db: Session,
+    auction_id: UUID,
+) -> GetAuctionInfo:
     """Gets an auction from the database"""
 
     auction = (
@@ -195,11 +269,18 @@ def _get_auction(db: Session, auction_id: UUID) -> GetAuctionInfo:
     if auction is None:
         raise NotFound("Auction not found")
 
+    now = datetime.utcnow()
+    limit = (
+        auction.sponsored_slots + 5
+        if now >= auction.payment_starts_at
+        else auction.sponsored_slots
+    )
+
     bids = (
         db.query(AuctionBid)
         .filter(AuctionBid.auction_id == auction_id)
         .order_by(AuctionBid.amount.desc())
-        .limit(auction.sponsored_slots)
+        .limit(limit)
         .all()
     )
 
@@ -212,21 +293,17 @@ def get_auction(db: Session, auction_id: UUID) -> GetAuctionInfo:
     return _get_auction(db=db, auction_id=auction_id)
 
 
-def get_auctions(
+def get_historical_auctions(
     db: Session,
     page: int = 1,
     per_page: int = 10,
-    include_current_auction: bool = False,
 ) -> list[GetAuctionInfo]:
     """Gets all auctions from the database and the associated bids"""
 
     auctions = (
         db.query(Auction)
         .filter(
-            or_(
-                Auction.is_current_auction == False,
-                Auction.is_current_auction == include_current_auction,
-            )
+            Auction.is_current_auction == False,
         )
         .order_by(Auction.sponsored_ends_at.desc())
         .limit(per_page)
@@ -238,7 +315,10 @@ def get_auctions(
 
     bids = (
         db.query(AuctionBid)
-        .filter(AuctionBid.auction_id.in_(auction_ids))
+        .filter(
+            AuctionBid.auction_id.in_(auction_ids),
+            AuctionBid.payment_status == BidPaymentStatus.PAID,
+        )
         .order_by(AuctionBid.amount.desc())
         .all()
     )
@@ -362,3 +442,109 @@ def get_bid(db: Session, user_id: UUID, auction_id: UUID, server_id: UUID):
         raise NotFound("Bid not found")
 
     return bid
+
+
+def start_payment_phase_task() -> None:
+    """Wraps the start_payment_phase function to be used as a task"""
+
+    db: Session = next(get_db())
+
+    start_payment_phase(db=db)
+
+    db.close()
+
+
+def start_payment_phase(db: Session) -> None:
+    """Starts the payment phase, which sets bid_status for the top 15 auction bids"""
+
+    current_auction = get_current_auction(db=db)
+
+    # get the top sponsored_slots + 5 bids
+    bids = (
+        db.query(AuctionBid)
+        .filter(AuctionBid.auction_id == current_auction.auction.id)
+        .order_by(AuctionBid.amount.desc())
+        .limit(current_auction.auction.sponsored_slots + 5)
+        .all()
+    )
+
+    # set payment status to Awaiting Response for top top sponsored_slots bids
+    for bid in bids[: current_auction.auction.sponsored_slots]:
+        bid.payment_status = BidPaymentStatus.AWAITING_RESPONSE
+
+    # set payment status to Standby for the next 5 bids
+    for bid in bids[current_auction.auction.sponsored_slots :]:
+        bid.payment_status = BidPaymentStatus.STANDBY
+
+    with _handle_db_errors():
+        db.commit()
+
+
+def set_bid_payment_status(
+    db: Session,
+    bid_id: UUID,
+    payment_status: BidPaymentStatus,
+) -> AuctionBid:
+    """Sets the bid payment status"""
+
+    bid = db.query(AuctionBid).filter(AuctionBid.id == bid_id).one_or_none()
+
+    if bid is None:
+        raise NotFound("Bid not found")
+
+    bid.payment_status = payment_status
+
+    with _handle_db_errors():
+        db.commit()
+
+    return bid
+
+
+def populate_sponsored_servers_task() -> None:
+    """Wraps the populate_sponsored_servers function to be used as a task"""
+
+    db: Session = next(get_db())
+
+    populate_sponsored_servers(db=db)
+
+    db.close()
+
+
+def populate_sponsored_servers(db: Session):
+    """Populates the the sponsor table with the Paid winners of the current auction,
+    in time for them to be show during their sponsor period"""
+
+    current_auction = get_current_auction(db=db)
+
+    # get the top bids that have been paid
+    bids = (
+        db.query(AuctionBid)
+        .filter(
+            AuctionBid.auction_id == current_auction.auction.id,
+            AuctionBid.payment_status == BidPaymentStatus.PAID,
+        )
+        .order_by(AuctionBid.amount.desc())
+        .all()
+    )
+
+    now = datetime.utcnow()
+
+    # add a month as we are sponsoring the next month
+    next_month = now + relativedelta(months=+1)
+
+    month = next_month.month
+    year = next_month.year
+
+    for index, bid in enumerate(bids):
+        sponsor = Sponsor(
+            user_id=bid.user_id,
+            server_id=bid.server_id,
+            slot=index + 1,
+            year=year,
+            month=month,
+        )
+
+        db.add(sponsor)
+
+    with _handle_db_errors():
+        db.commit()

@@ -7,11 +7,14 @@ from msc.constants import (
     DEFAULT_AUCTION_PAGE,
     DEFAULT_AUCTION_PAGE_SIZE,
     MAX_AUCTIONS_PAGE_SIZE,
+    SPONSORED_SLOTS_DEFAULT,
+    MINIMUM_BID_DEFAULT,
 )
 from msc.dto.base import BaseDto
 from msc.dto.custom_types import DateTimeUTC
 from msc.models import Auction, AuctionBid
 from msc.services.auction_service import GetAuctionInfo
+from msc.constants import BidPaymentStatus
 
 
 class AuctionDto(BaseDto):
@@ -51,6 +54,7 @@ class AuctionBidDto(BaseDto):
     server_name: str
     amount: int
     created_at: DateTimeUTC
+    payment_status: Optional[BidPaymentStatus] = None
 
     @classmethod
     def from_service(cls, auction_bid: AuctionBid):
@@ -61,6 +65,7 @@ class AuctionBidDto(BaseDto):
             server_name=auction_bid.server_name,
             amount=auction_bid.amount,
             created_at=auction_bid.created_at,
+            payment_status=auction_bid.payment_status,
         )
 
 
@@ -91,11 +96,19 @@ class AuctionsGetInputDto(BaseDto):
 class AuctionCreateInputDto(BaseDto):
     sponsored_year: int
     sponsored_month: int
-    minimum_bid: Optional[int]
-    sponsored_slots: Optional[int]
-    is_current_auction: Optional[bool] = False
+    minimum_bid: Optional[int] = MINIMUM_BID_DEFAULT
+    sponsored_slots: Optional[int] = SPONSORED_SLOTS_DEFAULT
+
+
+class AuctionCurrentCreateInputDto(BaseDto):
+    minimum_bid: Optional[int] = MINIMUM_BID_DEFAULT
+    sponsored_slots: Optional[int] = SPONSORED_SLOTS_DEFAULT
 
 
 class AuctionBidCreateInputDto(BaseDto):
     server_id: UUID
     amount: int
+
+
+class AuctionBidSetPaymentStatusInputDto(BaseDto):
+    payment_status: BidPaymentStatus

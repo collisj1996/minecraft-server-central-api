@@ -4,11 +4,12 @@ from uuid import uuid4
 
 import freezegun
 import pytest
+from msc.jobs.jobs import persisted_scheduler
 
-from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT
+from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT, BidPaymentStatus
 from msc.errors import NotFound, Unauthorized
-from msc.models import Auction, AuctionBid, Server, User
-from msc.services import auction_service
+from msc.models import Auction, AuctionBid, Server, User, Sponsor
+from msc.services import auction_service, server_service
 
 
 def test_create_auction(
@@ -524,19 +525,19 @@ def test_get_current_auction_with_bids(
 
     assert get_current_auction.bids[0].amount == 70000
     assert get_current_auction.bids[1].amount == 2100
-    assert get_current_auction.bids[2].amount == 1000
+    assert get_current_auction.bids[2].amount == 1050
     assert get_current_auction.bids[3].amount == 1000
     assert get_current_auction.bids[4].amount == 650
     assert get_current_auction.bids[5].amount == 600
     assert get_current_auction.bids[5].server_id == server_colcraft.id
     assert get_current_auction.bids[6].amount == 550
     assert get_current_auction.bids[6].server_id == server_hypixel.id
-    assert get_current_auction.bids[7].amount == 500
+    assert get_current_auction.bids[7].amount == 525
     assert get_current_auction.bids[8].amount == 500
     assert get_current_auction.bids[9].amount == 400
 
 
-def test_get_auctions(
+def test_get_historical_auctions(
     session,
     user_jack: User,
     user_alan: User,
@@ -627,8 +628,14 @@ def test_get_auctions(
 
         auction_service.unset_current_auction(db=session)
 
+        # set all bids to paid
+        for bid in session.query(AuctionBid).all():
+            bid.payment_status = BidPaymentStatus.PAID
+
+    session.commit()
+
     # get all auctions
-    auctions = auction_service.get_auctions(db=session)
+    auctions = auction_service.get_historical_auctions(db=session)
 
     assert len(auctions) == 2
 
@@ -669,7 +676,7 @@ def test_get_auctions(
     assert auctions[0].bids[1].server_id == server_hypixel.id
 
 
-def test_get_auctions_pagination(
+def test_get_historical_auctions_pagination(
     session,
     historical_auctions_with_bids: list[Auction],
 ):
@@ -687,7 +694,7 @@ def test_get_auctions_pagination(
     for i in range(1, num_pages + 1):
         print("Page: ", page)
 
-        response = auction_service.get_auctions(
+        response = auction_service.get_historical_auctions(
             db=session,
             page=page,
             per_page=page_size,
@@ -715,3 +722,249 @@ def test_get_auctions_pagination(
                 previous_bid = bid
 
             previous_bid = None
+
+
+def test_start_payment_phase(
+    session,
+    auction_with_bids: Auction,
+    ten_more_servers,
+):
+    """Test starting the payment phase of an auction"""
+
+    # add more bids
+    with freezegun.freeze_time(datetime(2020, 12, 19)):
+        for index, server in enumerate(ten_more_servers["servers_list"]):
+            auction_service.add_auction_bid(
+                db=session,
+                auction_id=auction_with_bids.id,
+                user_id=server.user_id,
+                server_id=server.id,
+                amount=570 + index,
+            )
+
+    with freezegun.freeze_time(datetime(2020, 12, 28, 12, 1)):
+        auction_service.start_payment_phase(
+            db=session,
+        )
+
+    with freezegun.freeze_time(datetime(2020, 12, 28, 12, 2)):
+        auction = auction_service.get_current_auction(
+            db=session,
+        )
+
+        # assert first x=sponsored_slots bids have status of Awaiting Response
+        for bid in auction.bids[: auction.auction.sponsored_slots]:
+            assert bid.payment_status == BidPaymentStatus.AWAITING_RESPONSE
+
+        # assert the rest of the bids have status of Standby
+        for bid in auction.bids[auction.auction.sponsored_slots :]:
+            assert bid.payment_status == BidPaymentStatus.STANDBY
+
+
+def test_distinct_bid_amount(
+    session,
+    server_colcraft: Server,
+    server_hypixel: Server,
+    auction_inside_bidding_period: Auction,
+):
+    """Test that each bid is a distinct amount"""
+
+    auction_service.add_auction_bid(
+        db=session,
+        auction_id=auction_inside_bidding_period.id,
+        user_id=server_colcraft.user_id,
+        server_id=server_colcraft.id,
+        amount=100,
+    )
+
+    with pytest.raises(auction_service.InvalidBidAmount) as e:
+        auction_service.add_auction_bid(
+            db=session,
+            auction_id=auction_inside_bidding_period.id,
+            user_id=server_hypixel.user_id,
+            server_id=server_hypixel.id,
+            amount=100,
+        )
+
+    assert e.value.message == "Bid amount must be unique"
+
+
+def test_set_bid_payment_status(
+    session,
+    server_colcraft: Server,
+    auction_inside_bidding_period: Auction,
+):
+    """Test setting the payment status of a bid"""
+
+    # add a bid
+    bid = auction_service.add_auction_bid(
+        db=session,
+        auction_id=auction_inside_bidding_period.id,
+        user_id=server_colcraft.user_id,
+        server_id=server_colcraft.id,
+        amount=100,
+    )
+
+    # assert the bid has None as the payment status
+    assert bid.payment_status == None
+
+    # set the payment status of the bid to Paid
+    auction_service.set_bid_payment_status(
+        db=session,
+        bid_id=bid.id,
+        payment_status=BidPaymentStatus.PAID,
+    )
+
+    # assert the bid has the correct payment status
+    assert bid.payment_status == BidPaymentStatus.PAID
+
+
+def test_create_current_auction(session):
+    """Test creating the current auction"""
+
+    with freezegun.freeze_time(datetime(2020, 11, 1)):
+        auction = auction_service.create_current_auction(db=session)
+        assert auction.sponsored_year == 2020
+        assert auction.sponsored_month == 12
+
+        assert auction.is_current_auction == True
+
+    with freezegun.freeze_time(datetime(2020, 12, 1)):
+        auction_1 = auction_service.create_current_auction(db=session)
+        assert auction_1.sponsored_year == 2021
+        assert auction_1.sponsored_month == 1
+
+        assert auction.is_current_auction == False
+        assert auction_1.is_current_auction == True
+
+    with freezegun.freeze_time(datetime(2021, 1, 1)):
+        auction_2 = auction_service.create_current_auction(db=session)
+        assert auction_2.sponsored_year == 2021
+        assert auction_2.sponsored_month == 2
+
+    assert auction.is_current_auction == False
+    assert auction_1.is_current_auction == False
+    assert auction_2.is_current_auction == True
+
+
+def test_populate_sponsored_servers_and_get_them(
+    session,
+    server_colcraft: Server,
+    auction_with_bids: Auction,
+    ten_more_servers,
+):
+    """Tests that the populate_sponsored_servers method works correctly"""
+
+    # add more bids
+    with freezegun.freeze_time(datetime(2020, 12, 19)):
+        sponsor = Sponsor(
+            user_id=server_colcraft.user_id,
+            server_id=server_colcraft.id,
+            slot=1,
+            year=2020,
+            month=12,
+        )
+
+        session.add(sponsor)
+        session.commit()
+
+        # get sponsored servers
+        sponsored_servers = server_service.get_sponsored_servers(
+            db=session,
+        )
+
+        # assert there are no sponsored servers
+        assert len(sponsored_servers) == 1
+
+        # assert the sponsored server is the server that was sponsored
+        assert sponsored_servers[0].server.id == server_colcraft.id
+
+        for index, server in enumerate(ten_more_servers["servers_list"]):
+            auction_service.add_auction_bid(
+                db=session,
+                auction_id=auction_with_bids.id,
+                user_id=server.user_id,
+                server_id=server.id,
+                amount=570 + index,
+            )
+
+    with freezegun.freeze_time(datetime(2020, 12, 28, 12, 1)):
+        auction_service.start_payment_phase(
+            db=session,
+        )
+
+        current_auction = auction_service.get_current_auction(
+            db=session,
+        )
+
+        for bid in current_auction.bids:
+            if bid.payment_status == BidPaymentStatus.AWAITING_RESPONSE:
+                bid.payment_status = BidPaymentStatus.PAID
+
+        session.commit()
+
+    with freezegun.freeze_time(datetime(2020, 12, 31, 12, 0)):
+        auction_service.populate_sponsored_servers(
+            db=session,
+        )
+
+        # get sponsored servers, should still be previous sponsored servers
+        sponsored_servers = server_service.get_sponsored_servers(
+            db=session,
+        )
+
+        # assert there are no sponsored servers
+        assert len(sponsored_servers) == 1
+
+        # assert the sponsored server is the server that was sponsored
+        assert sponsored_servers[0].server.id == server_colcraft.id
+
+    with freezegun.freeze_time(datetime(2021, 1, 1, 1)):
+        # get sponsored servers, should be the new sponsored servers
+        sponsored_servers = server_service.get_sponsored_servers(
+            db=session,
+        )
+
+        assert len(sponsored_servers) == 10
+
+        # assert the sponsored servers have the correct order with relation to the bids
+        for i in range(0, len(sponsored_servers)):
+            assert sponsored_servers[i].server.id == current_auction.bids[i].server_id
+
+        sponsors = (
+            session.query(Sponsor)
+            .filter(
+                Sponsor.year == "2021",
+                Sponsor.month == "1",
+            )
+            .all()
+        )
+
+        # assert the order of sponsored servers matches sponsor_slot
+        for index, server in enumerate(sponsored_servers):
+            assert sponsors[index].server_id == server.server.id
+            assert sponsors[index].slot == index + 1
+
+@pytest.mark.disable_mock_tasks
+def test_auction_jobs_scheduled(session):
+    """Tests that the scheduled jobs for starting the pay_phase and populating the sponsored servers
+    are in fact scheduled and at the correct time"""
+
+    persisted_scheduler.start()
+
+    current_auction = auction_service.create_current_auction(
+        db=session,
+    )
+
+    jobs = persisted_scheduler.get_jobs()
+
+    for job in jobs:
+        if job.name == "start_payment_phase_task":
+            assert str(job.next_run_time).split("+")[0] == str(
+                current_auction.payment_starts_at
+            )
+
+        if job.name == "populate_sponsored_servers_task":
+            assert str(job.next_run_time).split("+")[0] == str(
+                current_auction.sponsored_starts_at - timedelta(hours=12)
+            )
