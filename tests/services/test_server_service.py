@@ -1164,3 +1164,54 @@ def test_get_auction_eligibility(session, server_colcraft: Server):
     assert elegibility.uptime
     assert elegibility.server_age
     assert is_eligible
+
+
+def test_search_correct_rank(
+    session,
+    server_colcraft: Server,
+    server_colcraft_2: Server,
+    server_hypixel: Server,
+):
+    """Test that the rank remains correct when searching"""
+
+    # add 2 votes for colcraft
+    for i in range(1, 3):
+        vote_service.add_vote(
+            db=session,
+            server_id=server_colcraft.id,
+            client_ip=f"127.0.0.{i}",
+            minecraft_username=f"test{i}",
+        )
+
+    # add 1 vote for colcraft_2
+    vote_service.add_vote(
+        db=session,
+        server_id=server_colcraft_2.id,
+        client_ip="127.0.0.1",
+        minecraft_username="test",
+    )
+
+    # get servers
+    servers = server_service.get_servers(
+        db=session,
+    )
+
+    assert servers.total_servers == 3
+
+    # assert the rank is correct
+    assert servers.servers[0].server.id == server_colcraft.id
+    assert servers.servers[0].rank == 1
+    assert servers.servers[1].server.id == server_colcraft_2.id
+    assert servers.servers[1].rank == 2
+    assert servers.servers[2].server.id == server_hypixel.id
+    assert servers.servers[2].rank == 3
+
+    # search for hypixel - should be rank 3
+    servers = server_service.get_servers(
+        db=session,
+        search_query="hypixel",
+    )
+
+    assert servers.total_servers == 1
+    assert servers.servers[0].server.id == server_hypixel.id
+    assert servers.servers[0].rank == 3

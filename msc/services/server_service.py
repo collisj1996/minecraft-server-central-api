@@ -142,12 +142,12 @@ def get_servers(
         Server,
         func.count(Vote.id).label("total_votes"),
         func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
-        func.rank()
-        .over(
-            order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
-            partition_by=None,
-        )
-        .label("rank"),
+        # func.rank()
+        # .over(
+        #     order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
+        #     partition_by=None,
+        # )
+        # .label("rank"),
     )
 
     if tags:
@@ -186,7 +186,10 @@ def get_servers(
     return GetServersInfo(
         servers=[
             GetServerInfo(
-                server=s[0], votes_this_month=s[2], total_votes=s[1], rank=s[3]
+                server=s[0],
+                votes_this_month=s[2],
+                total_votes=s[1],
+                rank=get_server_rank(db=db, server=s[0]),
             )
             for s in servers_result
         ],
