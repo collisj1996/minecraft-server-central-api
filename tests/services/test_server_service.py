@@ -59,6 +59,8 @@ def test_get_servers_with_votes(
     session,
     server_colcraft: Server,
     server_hypixel: Server,
+    server_colcraft_2: Server,
+    ten_servers,
 ):
     """Tests getting servers with votes"""
 
@@ -84,24 +86,69 @@ def test_get_servers_with_votes(
         minecraft_username="test",
     )
 
+    # sponsor some serve
+    sponsor_1 = Sponsor(
+        user_id=ten_servers["servers_list"][0].user_id,
+        server_id=ten_servers["servers_list"][0].id,
+        slot=3,
+        year=datetime.utcnow().year,
+        month=datetime.utcnow().month,
+    )
+
+    sponsor_2 = Sponsor(
+        user_id=ten_servers["servers_list"][1].user_id,
+        server_id=ten_servers["servers_list"][1].id,
+        slot=2,
+        year=datetime.utcnow().year,
+        month=datetime.utcnow().month,
+    )
+
+    # no votes for - colcraft_2 but they are a sponsor
+    sponsor_3 = Sponsor(
+        user_id=server_colcraft_2.user_id,
+        server_id=server_colcraft_2.id,
+        slot=1,
+        year=datetime.utcnow().year,
+        month=datetime.utcnow().month,
+    )
+
+    session.add(sponsor_1)
+    session.add(sponsor_2)
+    session.add(sponsor_3)
+    session.commit()
+
     servers_info: GetServersInfo = server_service.get_servers(
         db=session,
     )
 
     servers = servers_info.servers
 
-    assert len(servers) == 2
+    assert len(servers) == 10
 
-    hypixel_server = next(s for s in servers if s.server.id == server_hypixel.id)
-    colcraft_server = next(s for s in servers if s.server.id == server_colcraft.id)
+    # colcraft_2 should be first as they are a sponsor (slot 1)
+    assert servers[0].server.id == server_colcraft_2.id
+    assert servers[0].rank == 1
 
-    assert hypixel_server.server
-    assert hypixel_server.votes_this_month == 1
-    assert hypixel_server.total_votes == 1
+    # ten_servers["servers_list"][1].id should be second as they are a sponsor (slot 2)
+    assert servers[1].server.id == ten_servers["servers_list"][1].id
+    assert servers[1].rank == 2
 
-    assert colcraft_server.server
-    assert colcraft_server.votes_this_month == 2
-    assert colcraft_server.total_votes == 2
+    # ten_servers["servers_list"][0].id should be third as they are a sponsor (slot 3)
+    assert servers[2].server.id == ten_servers["servers_list"][0].id
+    assert servers[2].rank == 3
+
+    # colcraft should be second as it has the most votes
+    assert servers[3].server.id == server_colcraft.id
+    assert servers[3].rank == 4
+
+    # hypixel should be third as it has the least votes
+    assert servers[4].server.id == server_hypixel.id
+    assert servers[4].rank == 5
+
+    assert servers[5].server
+    assert servers[5].rank == 6
+    assert servers[6].server
+    assert servers[6].rank == 6
 
 
 def test_get_servers_with_votes_order(

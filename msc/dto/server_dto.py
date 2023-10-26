@@ -10,6 +10,12 @@ from msc.models import Server
 from msc.services import server_service
 
 
+def _get_is_top_server(
+    rank: int,
+) -> bool:
+    return rank <= 30
+
+
 def _get_server_icon_url(
     server: Server,
 ) -> Optional[str]:
@@ -132,6 +138,8 @@ class GetServerDto(ServerDto):
     total_votes: int
     votes_this_month: int
     auction_eligibility: Optional[AuctionEligibilityDto] = None
+    is_sponsored: bool
+    is_top_server: bool
 
     @classmethod
     def from_service(
@@ -176,6 +184,8 @@ class GetServerDto(ServerDto):
             )
             if server_info.auction_eligibility
             else None,
+            is_sponsored=server_info.is_sponsored,
+            is_top_server=_get_is_top_server(server_info.rank),
         )
 
 

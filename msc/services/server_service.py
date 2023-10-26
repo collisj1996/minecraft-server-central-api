@@ -18,6 +18,7 @@ from sqlalchemy import (
     Float,
     Text,
     Numeric,
+    case,
 )
 from sqlalchemy.orm import Session
 
@@ -52,6 +53,7 @@ class GetServerInfo:
     votes_this_month: int
     total_votes: int
     rank: int
+    is_sponsored: bool
     auction_eligibility: Optional[ServerAuctionEligibility] = None
 
 
@@ -142,12 +144,7 @@ def get_servers(
         Server,
         func.count(Vote.id).label("total_votes"),
         func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
-        # func.rank()
-        # .over(
-        #     order_by=subquery.c.votes_this_month_sub.desc().nulls_last(),
-        #     partition_by=None,
-        # )
-        # .label("rank"),
+        (Sponsor.slot != None).label("is_sponsored"),
     )
 
     if tags:
@@ -158,6 +155,14 @@ def get_servers(
 
     servers_query = (
         servers_query.outerjoin(
+            Sponsor,
+            and_(
+                Server.id == Sponsor.server_id,
+                Sponsor.month == month,
+                Sponsor.year == year,
+            ),
+        )
+        .outerjoin(
             Vote,
             Server.id == Vote.server_id,
         )
@@ -169,8 +174,14 @@ def get_servers(
             Server.flagged_for_deletion == False,
             *filter_queries,
         )
-        .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
+        .group_by(
+            Server.id,
+            Sponsor.slot,
+            subquery.c.votes_this_month_sub,
+            Server.created_at,
+        )
         .order_by(
+            Sponsor.slot.asc(),
             desc("votes_this_month"),
             Server.created_at.desc(),
             *order_by,
@@ -190,6 +201,7 @@ def get_servers(
                 votes_this_month=s[2],
                 total_votes=s[1],
                 rank=get_server_rank(db=db, server=s[0]),
+                is_sponsored=s[3],
             )
             for s in servers_result
         ],
@@ -241,6 +253,7 @@ def get_sponsored_servers(db: Session) -> List[GetServerInfo]:
                 db=db,
                 server=server,
             ),
+            is_sponsored=True,
         )
         for server in servers
     ]
@@ -277,14 +290,21 @@ def get_server(
             Server,
             func.count(Vote.id).label("total_votes"),
             func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
+            (Sponsor.slot != None).label("is_sponsored"),
         )
+        .outerjoin(Sponsor, Server.id == Sponsor.server_id)
         .outerjoin(Vote, Server.id == Vote.server_id)
         .outerjoin(subquery, Server.id == subquery.c.server_id)
         .filter(
             Server.id == server_id,
             Server.flagged_for_deletion == False,
         )
-        .group_by(Server.id, subquery.c.votes_this_month_sub, Server.created_at)
+        .group_by(
+            Server.id,
+            Sponsor.slot,
+            subquery.c.votes_this_month_sub,
+            Server.created_at,
+        )
         .one_or_none()
     )
 
@@ -303,6 +323,7 @@ def get_server(
         votes_this_month=server_and_votes[2],
         total_votes=server_and_votes[1],
         rank=rank,
+        is_sponsored=server_and_votes[3],
         auction_eligibility=auction_eligibilty,
     )
 
@@ -340,6 +361,15 @@ def get_my_servers(
             Server,
             func.count(Vote.id).label("total_votes"),
             func.coalesce(subquery.c.votes_this_month_sub, 0).label("votes_this_month"),
+            (Sponsor.slot != None).label("is_sponsored"),
+        )
+        .outerjoin(
+            Sponsor,
+            and_(
+                Server.id == Sponsor.server_id,
+                Sponsor.month == month,
+                Sponsor.year == year,
+            ),
         )
         .outerjoin(
             Vote,
@@ -355,6 +385,7 @@ def get_my_servers(
         )
         .group_by(
             Server.id,
+            Sponsor.slot,
             subquery.c.votes_this_month_sub,
             Server.created_at,
         )
@@ -372,6 +403,7 @@ def get_my_servers(
             votes_this_month=my_server[2],
             total_votes=my_server[1],
             rank=get_server_rank(db=db, server=my_server[0]),
+            is_sponsored=my_server[3],
             auction_eligibility=_get_auction_eligibility(server=my_server[0])
             if include_auction_eligibility
             else None,
@@ -771,10 +803,21 @@ def get_server_rank(
             Server.id,
             func.rank()
             .over(
-                order_by=vote_subquery.c.votes_this_month_sub.desc().nulls_last(),
+                order_by=[
+                    Sponsor.slot.asc().nulls_last(),
+                    vote_subquery.c.votes_this_month_sub.desc().nulls_last(),
+                ],
                 partition_by=None,
             )
             .label("rank"),
+        )
+        .outerjoin(
+            Sponsor,
+            and_(
+                Server.id == Sponsor.server_id,
+                Sponsor.month == month,
+                Sponsor.year == year,
+            ),
         )
         .outerjoin(
             vote_subquery,
@@ -785,6 +828,7 @@ def get_server_rank(
         )
         .group_by(
             Server.id,
+            Sponsor.slot,
             vote_subquery.c.votes_this_month_sub,
             Server.created_at,
         )
