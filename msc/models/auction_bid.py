@@ -11,6 +11,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 from msc.database import Base
 
@@ -31,6 +32,9 @@ class AuctionBid(Base):
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
     payment_status = Column(Text, nullable=True)
+
+    server = relationship("Server")
+    user = relationship("User")
 
     __table_args__ = (
         UniqueConstraint(

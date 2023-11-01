@@ -5,13 +5,12 @@ from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta
 from uuid import UUID
 
-from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT, BidPaymentStatus
 from msc.errors import BadRequest, NotFound, Unauthorized
 from msc.models import Auction, AuctionBid, Server, User, Sponsor
-from msc.services import server_service
+from msc.services import server_service, email_service
 from msc.jobs.jobs import persisted_scheduler
 from msc.database import get_db
 
@@ -468,13 +467,30 @@ def start_payment_phase(db: Session) -> None:
         .all()
     )
 
-    # set payment status to Awaiting Response for top top sponsored_slots bids
-    for bid in bids[: current_auction.auction.sponsored_slots]:
+    top_sponsored_slots_bids = bids[: current_auction.auction.sponsored_slots]
+    next_five_bids = bids[current_auction.auction.sponsored_slots :]
+
+    # set payment status to Awaiting Response for top sponsored_slots bids
+    for bid in top_sponsored_slots_bids:
         bid.payment_status = BidPaymentStatus.AWAITING_RESPONSE
 
     # set payment status to Standby for the next 5 bids
-    for bid in bids[current_auction.auction.sponsored_slots :]:
+    for bid in next_five_bids:
         bid.payment_status = BidPaymentStatus.STANDBY
+
+    # send emails to top sponsored slots bids
+    for index, bid in enumerate(top_sponsored_slots_bids):
+        email_service.send_email(
+            subject="Auction Winner!",
+            recipient=bid.user.email,
+            template="awaitingconfirmation",
+            params={
+                "recipient_name": bid.user.username,
+                "server_name": bid.server.name,
+                "sponsor_slot": index + 1,
+                "bid_amount": bid.amount,
+            },
+        )
 
     with _handle_db_errors():
         db.commit()

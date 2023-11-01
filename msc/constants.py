@@ -44,6 +44,8 @@ SERVER_LIST_SERVICE_NAME = "MCSC"
 
 QUERY_STRING_TAG_LIST_MAX = 10
 
+EMAIL_SENDER = "minecraftservercentralofficial@gmail.com"
+
 
 class BidPaymentStatus(str, Enum):
     """Enum for bid status"""

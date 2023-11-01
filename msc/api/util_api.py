@@ -6,6 +6,7 @@ from msc.services.auction_service import (
     start_payment_phase_task,
     populate_sponsored_servers_task,
 )
+from msc.services.email_service import send_email as send_email_
 from msc.utils.api_utils import admin_required
 
 router = APIRouter()
@@ -34,3 +35,15 @@ def populate_sponsored_slots(request: Request):
         "date",
         run_date=datetime.utcnow() + timedelta(seconds=20),
     )
+
+
+@router.post("/test/send_email")
+@admin_required
+def send_email(request: Request, body: dict) -> str:
+    send_email_(
+        subject=body.get("subject"),
+        recipient=body.get("recipient"),
+        template=body.get("template"),
+        params=body.get("params"),
+    )
+    return "success"
