@@ -3,7 +3,7 @@ from fastapi.requests import Request
 from sqlalchemy.orm import Session
 
 from msc.database import get_db
-from msc.dto.user_dto import UserAddInputDto, UserDto
+from msc.dto.user_dto import UserAddInputDto, UserDto, ChangePasswordInput
 from msc.services import user_service
 from msc.utils.api_utils import auth_required
 
@@ -46,3 +46,21 @@ def get_my_user(
         username=user.username,
         email=user.email,
     )
+
+
+@router.patch("/users/password")
+@auth_required
+def change_password(
+    request: Request,
+    body: ChangePasswordInput,
+) -> str:
+    """Endpoint for changing a user's password"""
+    token = request.state.token
+
+    response = user_service.change_password(
+        token=token,
+        current_password=body.previous_password,
+        new_password=body.proposed_password,
+    )
+
+    return "success"

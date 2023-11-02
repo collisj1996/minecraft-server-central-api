@@ -12,3 +12,8 @@ class UserAddInputDto(BaseDto):
     user_id: UUID
     username: str
     email: str
+
+
+class ChangePasswordInput(BaseDto):
+    previous_password: str
+    proposed_password: str

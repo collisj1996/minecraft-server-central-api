@@ -88,6 +88,7 @@ def init_middleware(app):
 
                     request.state.user_id = verified_claims["sub"]
                     request.state.authorised = True
+                    request.state.token = token
 
                     if verified_claims["sub"] in ADMIN_USER_IDS:
                         request.state.is_admin = True

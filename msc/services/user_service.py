@@ -1,10 +1,11 @@
 from contextlib import contextmanager
 from uuid import UUID
+import boto3
 
 from sqlalchemy.orm import Session
 
 from msc.models import User
-from msc.errors import NotFound
+from msc.errors import NotFound, BadRequest, Unauthorized, InternalError
 
 
 class UserNotFound(NotFound):
@@ -57,3 +58,38 @@ def get_user(
         raise UserNotFound("User information not found")
 
     return user
+
+
+def change_password(
+    token: str,
+    current_password: str,
+    new_password: str,
+):
+    """Sends a request to AWS to change a Cognito identity password"""
+
+    cognito_client = boto3.client("cognito-idp")
+
+    try:
+        response = cognito_client.change_password(
+            PreviousPassword=current_password,
+            ProposedPassword=new_password,
+            AccessToken=token,
+        )
+    except cognito_client.exceptions.ResourceNotFoundException:
+        raise BadRequest(
+            message="Resource not found",
+        )
+    except cognito_client.exceptions.InvalidParameterException:
+        raise BadRequest(
+            message="Invalid parameter",
+        )
+    except cognito_client.exceptions.InvalidPasswordException:
+        raise BadRequest(
+            message="Invalid password",
+        )
+    except cognito_client.exceptions.NotAuthorizedException:
+        raise BadRequest(
+            message="Invalid password",
+        )
+    except Exception as err:
+        raise InternalError(message=str(err))
