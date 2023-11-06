@@ -12,3 +12,4 @@ from .server_history import ServerHistory
 from .server_history_old import ServerHistoryOld
 from .vote_history import VoteHistory
 from .tag import Tag
+from .minecraft_version import MinecraftVersion

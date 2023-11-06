@@ -8,6 +8,7 @@ from msc.services.auction_service import (
 )
 from msc.services.email_service import send_email as send_email_
 from msc.utils.api_utils import admin_required
+from msc.jobs import tasks
 
 router = APIRouter()
 
@@ -46,4 +47,11 @@ def send_email(request: Request, body: dict) -> str:
         template=body.get("template"),
         params=body.get("params"),
     )
+    return "success"
+
+
+@router.post("/util/minecraft_versions/all")
+@admin_required
+def set_all_minecraft_versions(request: Request) -> str:
+    tasks.set_all_minecraft_versions()
     return "success"

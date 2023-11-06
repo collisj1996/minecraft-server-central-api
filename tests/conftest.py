@@ -51,7 +51,20 @@ def clear_persisted_tasks():
     """
 
     session = sessionmaker(bind=engine, autoflush=False, autocommit=False)()
-    session.execute(text("DELETE FROM apscheduler_jobs"))
+    # session.execute(text("""IF EXISTS(SELECT 1 FROM DELETE FROM apscheduler_jobs"""))
+    session.execute(
+        text(
+            """
+            DO $$
+            BEGIN
+        IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA =    
+            'public' AND TABLE_NAME = 'apscheduler_jobs') THEN
+            DELETE FROM apscheduler_jobs;
+        END IF;
+        END $$;
+    """
+        )
+    )
     session.commit()
     session.close()
 

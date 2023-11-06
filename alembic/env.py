@@ -27,6 +27,22 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+# IGNORE_SCHEMAS = ["apscheduler_jobs"]
+
+
+# def include_name(name, type_, parent_names):
+#     if type_ == "schema":
+#         return name not in IGNORE_SCHEMAS
+#     else:
+#         return True
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table":
+        if name == "apscheduler_jobs":
+            return False
+
+    return True
 
 
 def run_migrations_offline() -> None:
@@ -43,11 +59,13 @@ def run_migrations_offline() -> None:
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
+        include_object=include_object,
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_schemas=True,
     )
 
     with context.begin_transaction():
@@ -72,7 +90,12 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            include_object=include_object,
+            connection=connection,
+            target_metadata=target_metadata,
+            include_schemas=True,
+        )
 
         with context.begin_transaction():
             context.run_migrations()
