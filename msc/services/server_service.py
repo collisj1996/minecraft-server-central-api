@@ -81,6 +81,7 @@ def get_servers(
     search_query: Optional[str] = None,
     country_code: Optional[str] = None,  # TODO: Add tests for this
     tags: Optional[List[str]] = None,
+    versions: Optional[List[str]] = None,
 ):
     """Returns all servers"""
 
@@ -118,6 +119,9 @@ def get_servers(
     if tags:
         # TODO: make tag names unique in the database
         filter_queries.append(Tag.name.in_(tags))
+
+    if versions:
+        filter_queries.append(Server.minecraft_version.in_(versions))
 
     # Get the current month and year
     now = datetime.utcnow()

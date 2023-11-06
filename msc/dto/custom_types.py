@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from msc.dto.base import BaseDto
-from msc.constants import QUERY_STRING_TAG_LIST_MAX
+from msc.constants import QUERY_STRING_TAG_LIST_MAX, QUERY_STRING_VERSION_LIST_MAX
 
 
 class NotSet(BaseDto):
@@ -55,3 +55,22 @@ class TagsCommaSeperatedStringToList(str):
         else:
             return value
         return tag_list
+
+
+class VersionsCommaSeperatedStringToList(str):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value):
+        version_list = []
+        if isinstance(value, str):
+            version_list = value.split(",")
+            if len(version_list) > QUERY_STRING_VERSION_LIST_MAX:
+                raise ValueError(
+                    f"Version list cannot be longer than {QUERY_STRING_VERSION_LIST_MAX}"
+                )
+        else:
+            return value
+        return version_list

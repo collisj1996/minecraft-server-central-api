@@ -5,7 +5,12 @@ from pydantic import conint, conlist, validator, constr, root_validator
 
 from msc.constants import ALLOWED_TAGS, CDN_DOMAIN
 from msc.dto.base import BaseDto
-from msc.dto.custom_types import NOT_SET, DateTimeUTC, TagsCommaSeperatedStringToList
+from msc.dto.custom_types import (
+    NOT_SET,
+    DateTimeUTC,
+    TagsCommaSeperatedStringToList,
+    VersionsCommaSeperatedStringToList,
+)
 from msc.models import Server
 from msc.services import server_service
 
@@ -131,6 +136,7 @@ class ServersGetInputDto(BaseDto):
     search_query: Optional[str] = None
     country_code: Optional[str] = None
     tags: TagsCommaSeperatedStringToList = None
+    versions: VersionsCommaSeperatedStringToList = None
 
 
 class GetServerDto(ServerDto):
