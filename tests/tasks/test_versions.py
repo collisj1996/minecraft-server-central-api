@@ -1,6 +1,6 @@
 from msc.jobs.tasks import _get_minecraft_versions, set_all_minecraft_versions
-from msc.services.version_service import process_version_from_ping
 from msc.models import MinecraftVersion
+from msc.services.version_service import process_version_from_ping
 
 
 def test_get_minecraft_versions():

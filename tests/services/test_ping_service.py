@@ -1,9 +1,10 @@
-import pytest
-import freezegun
 from datetime import datetime, timedelta
 
+import freezegun
+import pytest
+
 from msc.errors import NotFound, Unauthorized
-from msc.models import Server, User, ServerHistory
+from msc.models import Server, ServerHistory, User
 from msc.services import ping_service, server_service
 
 

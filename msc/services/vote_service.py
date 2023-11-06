@@ -1,18 +1,17 @@
+import asyncio
+import logging
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import func, and_
+from aiovotifier import VotifierClient
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
-from msc.errors import NotFound, TooManyRequests, Unauthorized, BadRequest
-from msc.models import Server, Vote, ServerHistory
-from aiovotifier import VotifierClient
-import asyncio
-import logging
 from msc.constants import SERVER_LIST_SERVICE_NAME
-
+from msc.errors import BadRequest, NotFound, TooManyRequests, Unauthorized
+from msc.models import Server, ServerHistory, Vote
 
 logger = logging.getLogger(__name__)
 

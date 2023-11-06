@@ -1,25 +1,24 @@
+import re
 from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
-import re
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Column,
     DateTime,
+    Float,
     ForeignKeyConstraint,
     Integer,
     Text,
     UniqueConstraint,
-    Float,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID, TSVECTOR
+from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
 from sqlalchemy.orm import relationship
 
 from msc.database import Base
-
 
 INDEX_REMOVE_CHARS = "_"
 

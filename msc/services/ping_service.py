@@ -17,13 +17,13 @@ from msc.constants import ASYNC_POLL_BATCH_SIZE
 from msc.database import get_db
 from msc.errors import BadRequest, NotFound, Unauthorized
 from msc.models import Server, ServerHistory, Vote
-from msc.utils.file_utils import _get_checksum
+from msc.services.version_service import process_version_from_ping
 from msc.services.vote_service import (
+    get_new_votes,
     get_total_votes,
     get_votes_this_month,
-    get_new_votes,
 )
-from msc.services.version_service import process_version_from_ping
+from msc.utils.file_utils import _get_checksum
 
 logger = logging.getLogger(__name__)
 

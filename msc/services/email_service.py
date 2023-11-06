@@ -1,5 +1,6 @@
-import boto3
 import logging
+
+import boto3
 
 from msc.constants import EMAIL_SENDER
 

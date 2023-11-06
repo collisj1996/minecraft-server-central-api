@@ -1,33 +1,23 @@
 import base64
+import re
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
 from typing import List, Optional
 from uuid import UUID
-from dataclasses import dataclass
-import re
 
 import boto3
 from PIL import Image
-from sqlalchemy import (
-    and_,
-    desc,
-    func,
-    cast,
-    Integer,
-    Float,
-    Text,
-    Numeric,
-    case,
-)
+from sqlalchemy import Float, Integer, Numeric, Text, and_, cast, desc, func
 from sqlalchemy.orm import Session
 
 from msc.dto.custom_types import NOT_SET
 from msc.errors import BadRequest, NotFound
-from msc.models import Server, Tag, Vote, ServerHistory, Sponsor
+from msc.models import Server, ServerHistory, Sponsor, Tag, Vote
 from msc.models.server import INDEX_REMOVE_CHARS
-from msc.services.vote_service import get_total_votes, get_votes_this_month
 from msc.services import ping_service
+from msc.services.vote_service import get_total_votes, get_votes_this_month
 from msc.utils.file_utils import _get_checksum
 
 

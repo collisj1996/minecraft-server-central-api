@@ -1,10 +1,8 @@
 from fastapi import APIRouter
 from fastapi.requests import Request
 
-from msc.dto.tag_dto import (
-    GetTagsOutputDto,
-)
 from msc.constants import ALLOWED_TAGS
+from msc.dto.tag_dto import GetTagsOutputDto
 
 router = APIRouter()
 

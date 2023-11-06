@@ -1,9 +1,9 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from msc.services.ping_service import poll_servers_async, update_servers_uptime
-from msc.jobs.tasks import set_all_minecraft_versions
 from msc.database import get_url
+from msc.jobs.tasks import set_all_minecraft_versions
+from msc.services.ping_service import poll_servers_async, update_servers_uptime
 
 scheduler = BackgroundScheduler()
 persisted_scheduler = BackgroundScheduler()

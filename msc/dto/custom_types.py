@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from msc.dto.base import BaseDto
 from msc.constants import QUERY_STRING_TAG_LIST_MAX, QUERY_STRING_VERSION_LIST_MAX
+from msc.dto.base import BaseDto
 
 
 class NotSet(BaseDto):

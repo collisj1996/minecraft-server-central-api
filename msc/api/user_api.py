@@ -3,7 +3,7 @@ from fastapi.requests import Request
 from sqlalchemy.orm import Session
 
 from msc.database import get_db
-from msc.dto.user_dto import UserAddInputDto, UserDto, ChangePasswordInput
+from msc.dto.user_dto import ChangePasswordInput, UserAddInputDto, UserDto
 from msc.services import user_service
 from msc.utils.api_utils import auth_required
 

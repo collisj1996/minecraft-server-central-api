@@ -1,15 +1,15 @@
 import base64
+from datetime import datetime, timedelta
 from io import BytesIO
 from uuid import uuid4
-import freezegun
-from datetime import datetime, timedelta
 
+import freezegun
 import pytest
 
 from msc.errors import BadRequest, NotFound
-from msc.models import Server, User, Vote, Sponsor
-from msc.services import server_service, user_service, vote_service, sponsor_service
-from msc.services.server_service import GetServersInfo, GetServerInfo
+from msc.models import Server, Sponsor, User, Vote
+from msc.services import server_service, sponsor_service, user_service, vote_service
+from msc.services.server_service import GetServerInfo, GetServersInfo
 
 
 def test_get_servers_no_servers(session):

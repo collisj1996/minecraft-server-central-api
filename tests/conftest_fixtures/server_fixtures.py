@@ -1,10 +1,10 @@
+from datetime import datetime, timedelta
 from uuid import uuid4
 
-import pytest
 import freezegun
-from datetime import datetime, timedelta
+import pytest
 
-from msc.models import User, ServerHistory, Server
+from msc.models import Server, ServerHistory, User
 from msc.services import server_service, user_service, vote_service
 
 

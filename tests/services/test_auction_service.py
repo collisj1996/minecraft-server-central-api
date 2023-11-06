@@ -4,11 +4,11 @@ from uuid import uuid4
 
 import freezegun
 import pytest
-from msc.jobs.jobs import persisted_scheduler
 
 from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT, BidPaymentStatus
 from msc.errors import NotFound, Unauthorized
-from msc.models import Auction, AuctionBid, Server, User, Sponsor
+from msc.jobs.jobs import persisted_scheduler
+from msc.models import Auction, AuctionBid, Server, Sponsor, User
 from msc.services import auction_service, server_service
 
 
@@ -944,6 +944,7 @@ def test_populate_sponsored_servers_and_get_them(
         for index, server in enumerate(sponsored_servers):
             assert sponsors[index].server_id == server.server.id
             assert sponsors[index].slot == index + 1
+
 
 @pytest.mark.disable_mock_tasks
 def test_auction_jobs_scheduled(session):

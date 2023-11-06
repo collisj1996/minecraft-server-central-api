@@ -1,14 +1,16 @@
-from fastapi import APIRouter
-from msc.jobs.jobs import persisted_scheduler
 from datetime import datetime, timedelta
+
+from fastapi import APIRouter
 from fastapi.requests import Request
+
+from msc.jobs import tasks
+from msc.jobs.jobs import persisted_scheduler
 from msc.services.auction_service import (
-    start_payment_phase_task,
     populate_sponsored_servers_task,
+    start_payment_phase_task,
 )
 from msc.services.email_service import send_email as send_email_
 from msc.utils.api_utils import admin_required
-from msc.jobs import tasks
 
 router = APIRouter()
 

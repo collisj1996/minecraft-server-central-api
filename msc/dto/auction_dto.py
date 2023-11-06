@@ -7,14 +7,14 @@ from msc.constants import (
     DEFAULT_AUCTION_PAGE,
     DEFAULT_AUCTION_PAGE_SIZE,
     MAX_AUCTIONS_PAGE_SIZE,
-    SPONSORED_SLOTS_DEFAULT,
     MINIMUM_BID_DEFAULT,
+    SPONSORED_SLOTS_DEFAULT,
+    BidPaymentStatus,
 )
 from msc.dto.base import BaseDto
 from msc.dto.custom_types import DateTimeUTC
 from msc.models import Auction, AuctionBid
 from msc.services.auction_service import GetAuctionInfo
-from msc.constants import BidPaymentStatus
 
 
 class AuctionDto(BaseDto):

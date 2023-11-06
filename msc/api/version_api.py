@@ -1,12 +1,9 @@
 from fastapi import APIRouter, Depends
 from fastapi.requests import Request
-
-from msc.dto.version_dto import (
-    GetVersionsOutputDto,
-)
 from sqlalchemy.orm import Session
-from msc.database import get_db
 
+from msc.database import get_db
+from msc.dto.version_dto import GetVersionsOutputDto
 from msc.services.version_service import get_versions
 
 router = APIRouter()

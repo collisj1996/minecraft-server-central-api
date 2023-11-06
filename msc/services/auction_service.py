@@ -2,17 +2,17 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
 from uuid import UUID
 
+from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 
 from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT, BidPaymentStatus
-from msc.errors import BadRequest, NotFound, Unauthorized
-from msc.models import Auction, AuctionBid, Server, User, Sponsor
-from msc.services import server_service, email_service
-from msc.jobs.jobs import persisted_scheduler
 from msc.database import get_db
+from msc.errors import BadRequest, NotFound, Unauthorized
+from msc.jobs.jobs import persisted_scheduler
+from msc.models import Auction, AuctionBid, Server, Sponsor, User
+from msc.services import email_service, server_service
 
 
 class InvalidBidAmount(BadRequest):

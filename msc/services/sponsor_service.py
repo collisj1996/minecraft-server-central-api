@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from msc.constants import MINIMUM_BID_DEFAULT, SPONSORED_SLOTS_DEFAULT
 from msc.errors import BadRequest, NotFound, Unauthorized
-from msc.models import Sponsor, User, Server
+from msc.models import Server, Sponsor, User
 
 
 @contextmanager

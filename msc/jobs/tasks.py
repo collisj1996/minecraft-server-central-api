@@ -1,10 +1,11 @@
-from msc.database import get_db
-from msc.errors import InternalError
-from sqlalchemy.orm import Session
-from msc.models.minecraft_version import MinecraftVersion, VersionType
+import logging
 
 import requests
-import logging
+from sqlalchemy.orm import Session
+
+from msc.database import get_db
+from msc.errors import InternalError
+from msc.models.minecraft_version import MinecraftVersion, VersionType
 
 logger = logging.getLogger(__name__)
 

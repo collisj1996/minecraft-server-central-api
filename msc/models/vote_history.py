@@ -2,13 +2,13 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    Column,
-    ForeignKeyConstraint,
-    UniqueConstraint,
-    CheckConstraint,
-    DateTime,
     Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKeyConstraint,
     Integer,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 

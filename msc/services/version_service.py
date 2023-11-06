@@ -1,12 +1,12 @@
+import logging
 from contextlib import contextmanager
 from uuid import UUID
-import boto3
-import logging
 
+import boto3
 from sqlalchemy.orm import Session
 
+from msc.errors import BadRequest, InternalError, NotFound, Unauthorized
 from msc.models.minecraft_version import MinecraftVersion, VersionType
-from msc.errors import NotFound, BadRequest, Unauthorized, InternalError
 
 logger = logging.getLogger(__name__)
 

@@ -1,16 +1,15 @@
 from typing import Any
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import close_all_sessions, sessionmaker
-from sqlalchemy import text
 from apscheduler.schedulers.background import BackgroundScheduler
+from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.orm import close_all_sessions, sessionmaker
 
 # This needs to be imported before anything in the msc package
 import tests.utils.database_config_override  # noqa
 from msc.app import create_app
 from msc.config import config
-
 from msc.database import engine
 from msc.jobs.jobs import persisted_scheduler
 from msc.migrations.db_migration import run_migrations

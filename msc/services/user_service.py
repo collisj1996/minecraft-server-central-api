@@ -1,11 +1,11 @@
 from contextlib import contextmanager
 from uuid import UUID
-import boto3
 
+import boto3
 from sqlalchemy.orm import Session
 
+from msc.errors import BadRequest, InternalError, NotFound, Unauthorized
 from msc.models import User
-from msc.errors import NotFound, BadRequest, Unauthorized, InternalError
 
 
 class UserNotFound(NotFound):

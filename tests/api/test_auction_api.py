@@ -3,7 +3,7 @@ import math
 from fastapi.testclient import TestClient
 
 from msc.config import config
-from msc.models import Auction, User, Server
+from msc.models import Auction, Server, User
 
 from .utils import get_auth_header, get_response_body
 

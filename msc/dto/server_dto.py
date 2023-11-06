@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import conint, conlist, validator, constr, root_validator
+from pydantic import conint, conlist, constr, root_validator, validator
 
 from msc.constants import ALLOWED_TAGS, CDN_DOMAIN
 from msc.dto.base import BaseDto

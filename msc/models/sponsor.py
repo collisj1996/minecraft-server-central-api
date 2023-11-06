@@ -1,6 +1,6 @@
+import calendar
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
-import calendar
 
 from sqlalchemy import (
     CheckConstraint,

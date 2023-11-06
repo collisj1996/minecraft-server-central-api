@@ -1,10 +1,10 @@
 from fastapi.testclient import TestClient
 
 from msc.config import config
+from msc.constants import ALLOWED_TAGS
 from msc.models import User
 
 from .utils import get_auth_header, get_response_body
-from msc.constants import ALLOWED_TAGS
 
 
 def test_get_my_servers(

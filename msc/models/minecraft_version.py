@@ -1,14 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import (
-    Column,
-    Boolean,
-    Index,
-    Enum,
-    DateTime,
-    String,
-)
+from sqlalchemy import Boolean, Column, DateTime, Enum, Index, String
 
 from msc.database import Base
 

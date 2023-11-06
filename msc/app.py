@@ -19,13 +19,13 @@ from .api import (
     auth_api,
     migration_api,
     server_api,
+    tag_api,
     user_api,
     util_api,
-    vote_api,
-    tag_api,
     version_api,
+    vote_api,
 )
-from .jobs.jobs import scheduler, persisted_scheduler
+from .jobs.jobs import persisted_scheduler, scheduler
 
 logger = logging.getLogger(__name__)
 
