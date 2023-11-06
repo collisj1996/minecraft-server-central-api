@@ -23,6 +23,7 @@ from msc.services.vote_service import (
     get_votes_this_month,
     get_new_votes,
 )
+from msc.services.version_service import process_version_from_ping
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +207,11 @@ def poll_bedrock_server(
         server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
-        server.minecraft_version = status.version.name
+
+        server.minecraft_version = process_version_from_ping(
+            db=db,
+            raw_version=status.version.name,
+        )
 
     except TimeoutError as e:
         pass
@@ -266,7 +271,10 @@ def poll_java_server(
         server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
-        server.minecraft_version = status.version.name
+        server.minecraft_version = process_version_from_ping(
+            db=db,
+            raw_version=status.version.name,
+        )
 
         if status.icon:
             checksum = _get_checksum(status.icon)
@@ -319,7 +327,11 @@ def poll_java_server(
         server.players = players
         server.max_players = query.players.max
         server.last_pinged_at = datetime.utcnow()
-        server.minecraft_version = query.software.version
+
+        server.minecraft_version = process_version_from_ping(
+            db=db,
+            raw_version=query.software.version,
+        )
 
     except TimeoutError as timeout_error:
         pass
@@ -370,7 +382,11 @@ async def poll_bedrock_server_async(
         server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
-        server.minecraft_version = status.version.name
+
+        server.minecraft_version = process_version_from_ping(
+            db=db,
+            raw_version=status.version.name,
+        )
 
     except TimeoutError as e:
         pass
@@ -422,7 +438,11 @@ async def poll_java_server_async(
         server.players = players
         server.max_players = status.players.max
         server.last_pinged_at = datetime.utcnow()
-        server.minecraft_version = status.version.name
+
+        server.minecraft_version = process_version_from_ping(
+            db=db,
+            raw_version=status.version.name,
+        )
 
         if status.icon:
             checksum = _get_checksum(status.icon)
@@ -474,7 +494,11 @@ async def poll_java_server_async(
         server.players = query.players.online
         server.max_players = query.players.max
         server.last_pinged_at = datetime.utcnow()
-        server.minecraft_version = query.software.version
+
+        server.minecraft_version = process_version_from_ping(
+            db=db,
+            raw_version=query.software.version,
+        )
 
     except TimeoutError as timeout_error:
         pass
